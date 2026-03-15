@@ -1,9 +1,11 @@
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
+import { randomUUID } from 'node:crypto'
+import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
 import { db } from '../db/index.js'
 import { mcpTokens } from '../db/schema.js'
-import { mcpServer } from './server.js'
+import { createMcpServer } from './server.js'
 
 export const mcpRouter = new Hono()
 
@@ -17,7 +19,6 @@ async function validateMcpToken(authHeader: string | undefined): Promise<boolean
     if (candidate.scope !== 'read') continue
     const valid = await bcrypt.compare(token, candidate.tokenHash)
     if (valid) {
-      // Update last_used_at (fire and forget)
       db.update(mcpTokens)
         .set({ lastUsedAt: new Date() })
         .where(eq(mcpTokens.id, candidate.id))
@@ -28,30 +29,31 @@ async function validateMcpToken(authHeader: string | undefined): Promise<boolean
   return false
 }
 
-mcpRouter.post('/mcp', async (c) => {
+// Session store: maps session ID → transport instance
+const sessions = new Map<string, WebStandardStreamableHTTPServerTransport>()
+
+mcpRouter.all('/mcp', async (c) => {
   const valid = await validateMcpToken(c.req.header('Authorization'))
   if (!valid) return c.json({ error: 'Unauthorized' }, 401)
 
-  // Streamable HTTP: handle JSON-RPC POST
-  try {
-    const body = await c.req.json()
-    // Return a basic error response since full MCP streaming requires Node.js http
-    return c.json({ jsonrpc: '2.0', error: { code: -32000, message: 'Use SSE endpoint' }, id: body.id ?? null })
-  } catch {
-    return c.json({ error: 'Invalid request' }, 400)
+  const sessionId = c.req.header('Mcp-Session-Id')
+  let transport: WebStandardStreamableHTTPServerTransport
+
+  if (sessionId && sessions.has(sessionId)) {
+    // Resume existing session
+    transport = sessions.get(sessionId)!
+  } else if (!sessionId) {
+    // New session: create transport + server
+    transport = new WebStandardStreamableHTTPServerTransport({
+      sessionIdGenerator: () => randomUUID(),
+      onsessioninitialized: (id) => { sessions.set(id, transport) },
+      onsessionclosed: (id) => { sessions.delete(id) },
+    })
+    await createMcpServer().connect(transport)
+  } else {
+    // Session ID provided but not found (e.g. after server restart)
+    return c.json({ error: 'Session not found' }, 404)
   }
+
+  return transport.handleRequest(c.req.raw)
 })
-
-mcpRouter.get('/mcp', async (c) => {
-  const valid = await validateMcpToken(c.req.header('Authorization'))
-  if (!valid) return c.json({ error: 'Unauthorized' }, 401)
-
-  return c.text('MCP SSE endpoint ready', 200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-  })
-})
-
-// Reference mcpServer to satisfy the import (used for future SSE transport integration)
-void mcpServer

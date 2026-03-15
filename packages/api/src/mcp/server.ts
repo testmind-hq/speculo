@@ -5,13 +5,12 @@ import { getEndpointDetailTool } from './tools/getEndpointDetail.js'
 import { getSchemaDetailTool } from './tools/getSchemaDetail.js'
 import { getServiceMarkdownTool } from './tools/getServiceMarkdown.js'
 
-export const mcpServer = new McpServer({
-  name: 'speculo',
-  version: '1.0.0',
-})
-
-listServicesTool(mcpServer)
-searchEndpointsTool(mcpServer)
-getEndpointDetailTool(mcpServer)
-getSchemaDetailTool(mcpServer)
-getServiceMarkdownTool(mcpServer)
+export function createMcpServer(): McpServer {
+  const server = new McpServer({ name: 'speculo', version: '1.0.0' })
+  listServicesTool(server)
+  searchEndpointsTool(server)
+  getEndpointDetailTool(server)
+  getSchemaDetailTool(server)
+  getServiceMarkdownTool(server)
+  return server
+}
