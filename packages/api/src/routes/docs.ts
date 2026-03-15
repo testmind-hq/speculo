@@ -2,10 +2,11 @@ import { Hono } from 'hono'
 import { eq, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { services, specVersions } from '../db/schema.js'
+import { jwtAuth } from '../middleware/jwtAuth.js'
 
 export const docsRouter = new Hono()
 
-docsRouter.get('/docs/:service/:branch', async (c) => {
+docsRouter.get('/docs/:service/:branch', jwtAuth, async (c) => {
   const { service, branch } = c.req.param()
 
   const [row] = await db

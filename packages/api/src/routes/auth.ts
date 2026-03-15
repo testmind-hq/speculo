@@ -1,6 +1,7 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import bcrypt from 'bcryptjs'
 import { sign } from 'hono/jwt'
+import { setCookie, deleteCookie } from 'hono/cookie'
 import { eq, and } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { users, mcpTokens } from '../db/schema.js'
@@ -9,6 +10,16 @@ import { env } from '../env.js'
 import { randomBytes } from 'node:crypto'
 
 export const authRouter = new OpenAPIHono()
+
+function setAuthCookie(c: Parameters<typeof setCookie>[0], token: string) {
+  setCookie(c, 'speculo_token', token, {
+    httpOnly: true,
+    sameSite: 'Lax',
+    path: '/',
+    maxAge: env.JWT_EXPIRY_DAYS * 86400,
+    secure: process.env.NODE_ENV === 'production',
+  })
+}
 
 // Apply jwtAuth to token management routes
 authRouter.use('/api/tokens', jwtAuth)
@@ -50,6 +61,7 @@ authRouter.openapi(createRoute({
     { userId: user.id, exp: Math.floor(Date.now() / 1000) + env.JWT_EXPIRY_DAYS * 86400 },
     env.JWT_SECRET
   )
+  setAuthCookie(c, token)
   return c.json({ token, userId: user.id }, 200 as const)
 })
 
@@ -80,7 +92,23 @@ authRouter.openapi(createRoute({
     { userId: user.id, exp: Math.floor(Date.now() / 1000) + env.JWT_EXPIRY_DAYS * 86400 },
     env.JWT_SECRET
   )
+  setAuthCookie(c, token)
   return c.json({ token, userId: user.id }, 200 as const)
+})
+
+authRouter.openapi(createRoute({
+  method: 'post',
+  path: '/auth/logout',
+  operationId: 'logoutUser',
+  tags: ['Auth'],
+  summary: 'Log out',
+  description: 'Clear the session cookie.',
+  responses: {
+    200: { content: { 'application/json': { schema: z.object({ ok: z.boolean() }) } }, description: 'Logged out' },
+  },
+}), async (c) => {
+  deleteCookie(c, 'speculo_token', { path: '/' })
+  return c.json({ ok: true }, 200 as const)
 })
 
 authRouter.openapi(createRoute({

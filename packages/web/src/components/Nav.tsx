@@ -2,8 +2,9 @@ import { Link, useNavigate } from 'react-router-dom'
 
 export default function Nav() {
   const navigate = useNavigate()
-  function logout() {
+  async function logout() {
     localStorage.removeItem('speculo_token')
+    await fetch('/auth/logout', { method: 'POST' }).catch(() => {})
     navigate('/login')
   }
   return (
