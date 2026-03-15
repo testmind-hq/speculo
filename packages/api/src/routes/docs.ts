@@ -10,15 +10,15 @@ docsRouter.get('/docs/:service/:branch', jwtAuth, async (c) => {
   const { service, branch } = c.req.param()
 
   const [row] = await db
-    .select({ specContent: specVersions.specContent })
+    .select({ id: specVersions.id })
     .from(specVersions)
     .innerJoin(services, eq(specVersions.serviceId, services.id))
     .where(sql`${services.name} = ${service} AND ${specVersions.branch} = ${branch} AND ${specVersions.isLatest} = true`)
 
   if (!row) return c.json({ error: 'Not found' }, 404)
 
-  // Inline spec into HTML — Scalar JS does not fetch it separately
-  const specJson = row.specContent
+  // Serve spec via URL — never inline raw JSON into a <script> tag (XSS risk)
+  const specUrl = `/api/specs/${encodeURIComponent(service)}/${encodeURIComponent(branch)}/openapi.json`
 
   return c.html(`<!doctype html>
 <html>
@@ -28,14 +28,11 @@ docsRouter.get('/docs/:service/:branch', jwtAuth, async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1">
   </head>
   <body>
-    <script>
-      window.__SPECULO_SPEC__ = ${specJson};
-    </script>
     <div id="app"></div>
     <script src="https://cdn.jsdelivr.net/npm/@scalar/api-reference"></script>
     <script>
       Scalar.createApiReference('#app', {
-        spec: { content: window.__SPECULO_SPEC__ },
+        spec: { url: '${specUrl}' },
         theme: 'purple',
         layout: 'modern',
         darkMode: true,

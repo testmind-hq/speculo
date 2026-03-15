@@ -28,12 +28,16 @@ openssl rand -base64 32
 JWT_SECRET=<粘贴生成的密钥> docker compose up
 ```
 
-应用将在 `http://localhost:3000` 运行。首次启动时会自动创建默认管理员账号：
+应用将在 `http://localhost:3000` 运行。首次启动时会自动创建默认管理员账号，密码为**随机生成**并打印到容器日志中：
+
+```
+docker compose logs app | grep -A4 "Default admin"
+```
 
 | 字段 | 值 |
 |---|---|
 | 邮箱 | `admin@example.com` |
-| 密码 | `admin` |
+| 密码 | *（随机生成，见启动日志）* |
 
 > 首次登录后请及时修改密码。
 

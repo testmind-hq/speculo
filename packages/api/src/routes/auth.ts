@@ -34,13 +34,16 @@ const TokenSchema = z.object({
   createdAt: z.string(),
 })
 
+// Admin-only: create a new user account (requires existing super_admin JWT)
+authRouter.use('/auth/register', jwtAuth)
 authRouter.openapi(createRoute({
   method: 'post',
   path: '/auth/register',
   operationId: 'registerUser',
   tags: ['Auth'],
-  summary: 'Register a new account',
-  description: 'Create a new user account and return a signed JWT.',
+  summary: 'Create a new user account (admin only)',
+  description: 'Create a new user account. Requires an existing super_admin JWT. The new account is assigned the guest role by default.',
+  security: [{ bearerAuth: [] }],
   request: {
     body: {
       content: { 'application/json': { schema: z.object({ email: z.string().email(), password: z.string().min(8) }) } },
@@ -48,7 +51,7 @@ authRouter.openapi(createRoute({
     },
   },
   responses: {
-    200: { content: { 'application/json': { schema: z.object({ token: z.string(), userId: z.string() }) } }, description: 'Registered successfully' },
+    200: { content: { 'application/json': { schema: z.object({ userId: z.string() }) } }, description: 'User created' },
     409: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Email already registered' },
   },
 }), async (c) => {
@@ -56,13 +59,8 @@ authRouter.openapi(createRoute({
   const existing = await db.query.users.findFirst({ where: eq(users.email, email) })
   if (existing) return c.json({ error: 'Email already registered' }, 409 as const)
   const passwordHash = await bcrypt.hash(password, 10)
-  const [user] = await db.insert(users).values({ email, passwordHash, role: 'super_admin' }).returning()
-  const token = await sign(
-    { userId: user.id, exp: Math.floor(Date.now() / 1000) + env.JWT_EXPIRY_DAYS * 86400 },
-    env.JWT_SECRET
-  )
-  setAuthCookie(c, token)
-  return c.json({ token, userId: user.id }, 200 as const)
+  const [user] = await db.insert(users).values({ email, passwordHash, role: 'guest' }).returning()
+  return c.json({ userId: user.id }, 200 as const)
 })
 
 authRouter.openapi(createRoute({

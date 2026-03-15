@@ -28,12 +28,16 @@ openssl rand -base64 32
 JWT_SECRET=<paste-generated-secret> docker compose up
 ```
 
-The app is available at `http://localhost:3000`. A default admin account is created automatically on first startup:
+The app is available at `http://localhost:3000`. A default admin account is created automatically on first startup with a **randomly generated password** printed once to the container logs:
+
+```
+docker compose logs app | grep -A4 "Default admin"
+```
 
 | Field | Value |
 |---|---|
 | Email | `admin@example.com` |
-| Password | `admin` |
+| Password | *(random — see startup logs)* |
 
 > Change the password after first login.
 

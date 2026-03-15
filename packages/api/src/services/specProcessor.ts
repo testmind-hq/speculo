@@ -20,12 +20,12 @@ const spectral = new Spectral()
 // Fire-and-forget ruleset init; run() will await internally
 void spectral.setRuleset(oas as unknown as Parameters<typeof spectral.setRuleset>[0])
 
-export async function normalizeSpec(content: string, filename: string): Promise<NormalizeResult> {
-  // Parse based on file extension
+export async function normalizeSpec(content: string, _filename?: string): Promise<NormalizeResult> {
+  // Detect format by content, not filename — avoids failures when YAML is sent via JSON body
   let parsed: unknown
-  if (filename.endsWith('.json')) {
+  try {
     parsed = JSON.parse(content)
-  } else {
+  } catch {
     parsed = parseYaml(content)
   }
 
@@ -49,8 +49,6 @@ export async function normalizeSpec(content: string, filename: string): Promise<
   // Lint — warn only, never block upload
   const warnings: string[] = []
   try {
-    // Ensure ruleset is set before running
-    await spectral.setRuleset(oas as unknown as Parameters<typeof spectral.setRuleset>[0])
     const results = await spectral.run(upgraded)
     for (const r of results) {
       if (r.severity === 0 || r.severity === 1) { // error or warn
