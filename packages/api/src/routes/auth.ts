@@ -17,7 +17,7 @@ function setAuthCookie(c: Parameters<typeof setCookie>[0], token: string) {
     sameSite: 'Lax',
     path: '/',
     maxAge: env.JWT_EXPIRY_DAYS * 86400,
-    secure: process.env.NODE_ENV === 'production',
+    secure: env.SECURE_COOKIES,
   })
 }
 

@@ -63,6 +63,7 @@ Environment variables for `packages/api`:
 | `JWT_SECRET` | ✅ | — | Min 32 characters |
 | `JWT_EXPIRY_DAYS` | | `7` | Token lifetime in days |
 | `PORT` | | `3000` | HTTP port |
+| `SECURE_COOKIES` | | `false` | Set to `true` when serving over HTTPS (behind TLS terminator) |
 
 Apply database migrations:
 

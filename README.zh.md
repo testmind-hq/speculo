@@ -63,6 +63,7 @@ pnpm dev
 | `JWT_SECRET` | ✅ | — | 至少 32 个字符 |
 | `JWT_EXPIRY_DAYS` | | `7` | Token 有效天数 |
 | `PORT` | | `3000` | HTTP 端口 |
+| `SECURE_COOKIES` | | `false` | 通过 HTTPS（TLS 终止代理）提供服务时设为 `true` |
 
 执行数据库迁移：
 
