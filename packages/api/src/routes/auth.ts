@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import { sign } from 'hono/jwt'
 import { eq, and } from 'drizzle-orm'
 import { db } from '../db/index.js'

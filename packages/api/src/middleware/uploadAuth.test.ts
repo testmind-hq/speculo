@@ -12,7 +12,7 @@ vi.mock('../db/index.js', () => ({
   },
 }))
 
-vi.mock('bcrypt', () => ({
+vi.mock('bcryptjs', () => ({
   default: {
     compare: vi.fn(async () => false),
   },

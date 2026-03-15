@@ -5,7 +5,7 @@ vi.mock('../db/index.js', () => ({ db: {} }))
 vi.mock('./server.js', () => ({
   mcpServer: { connect: vi.fn(), close: vi.fn() },
 }))
-vi.mock('bcrypt', () => ({
+vi.mock('bcryptjs', () => ({
   default: {
     hash: vi.fn(async () => 'hashed'),
     compare: vi.fn(async () => false),

@@ -1,7 +1,7 @@
 import type { MiddlewareHandler } from 'hono'
 import { verify } from 'hono/jwt'
 import { eq } from 'drizzle-orm'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import { db } from '../db/index.js'
 import { mcpTokens } from '../db/schema.js'
 import { env } from '../env.js'

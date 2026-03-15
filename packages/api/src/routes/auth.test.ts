@@ -27,7 +27,7 @@ vi.mock('../db/index.js', () => {
 })
 
 // Mock bcrypt
-vi.mock('bcrypt', () => ({
+vi.mock('bcryptjs', () => ({
   default: {
     hash: vi.fn(async () => 'hashed'),
     compare: vi.fn(async () => true),

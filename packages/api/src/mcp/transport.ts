@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs'
 import { db } from '../db/index.js'
 import { mcpTokens } from '../db/schema.js'
 import { mcpServer } from './server.js'
