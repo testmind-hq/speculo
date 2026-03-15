@@ -16,7 +16,10 @@ export const jwtAuth: MiddlewareHandler = async (c, next) => {
   try {
     const token = auth.slice(7)
     const payload = await verify(token, env.JWT_SECRET, 'HS256')
-    c.set('userId', payload.userId as string)
+    if (typeof payload.userId !== 'string') {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+    c.set('userId', payload.userId)
     await next()
   } catch {
     return c.json({ error: 'Unauthorized' }, 401)
