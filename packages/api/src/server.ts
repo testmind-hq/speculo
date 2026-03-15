@@ -5,6 +5,7 @@ import { Scalar } from '@scalar/hono-api-reference'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { env } from './env.js'
+import { runStartup } from './startup.js'
 import { authRouter } from './routes/auth.js'
 import { uploadRouter } from './routes/upload.js'
 import { catalogRouter } from './routes/catalog.js'
@@ -53,9 +54,14 @@ app.get('/api-docs', Scalar({ url: '/openapi.json', theme: 'purple' }))
 app.use('*', serveStatic({ root: './public' }))
 app.use('*', serveStatic({ path: 'index.html', root: './public' }))
 
-serve({ fetch: app.fetch, port: env.PORT }, () => {
-  console.log(`Speculo running on http://localhost:${env.PORT}`)
-  console.log(`API docs: http://localhost:${env.PORT}/api-docs`)
+runStartup().then(() => {
+  serve({ fetch: app.fetch, port: env.PORT }, () => {
+    console.log(`Speculo running on http://localhost:${env.PORT}`)
+    console.log(`API docs: http://localhost:${env.PORT}/api-docs`)
+  })
+}).catch((err) => {
+  console.error('Startup failed:', err)
+  process.exit(1)
 })
 
 export default app
