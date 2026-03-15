@@ -29,6 +29,13 @@
       "when": 1742000001000,
       "tag": "0003_spec_hash",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1742000002000,
+      "tag": "0004_spec_versions_unique_idx",
+      "breakpoints": true
     }
   ]
 }
