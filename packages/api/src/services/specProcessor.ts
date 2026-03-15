@@ -1,0 +1,69 @@
+import { parse as parseYaml } from 'yaml'
+import { upgrade } from '@scalar/openapi-upgrader'
+import { default as spectralCoreModule } from '@stoplight/spectral-core'
+import { oas } from '@stoplight/spectral-rulesets'
+
+const { Spectral } = spectralCoreModule as unknown as { Spectral: new () => {
+  setRuleset: (ruleset: unknown) => void | Promise<void>
+  run: (spec: unknown) => Promise<Array<{ severity: number; path: (string | number)[]; message: string }>>
+} }
+
+export interface NormalizeResult {
+  spec: Record<string, unknown> & { info: { title: string } }
+  originalVersion: string
+  upgradedVersion: string
+  wasConverted: boolean
+  warnings: string[]
+}
+
+const spectral = new Spectral()
+// Fire-and-forget ruleset init; run() will await internally
+void spectral.setRuleset(oas as unknown as Parameters<typeof spectral.setRuleset>[0])
+
+export async function normalizeSpec(content: string, _filename?: string): Promise<NormalizeResult> {
+  // Detect format by content, not filename — avoids failures when YAML is sent via JSON body
+  let parsed: unknown
+  try {
+    parsed = JSON.parse(content)
+  } catch {
+    parsed = parseYaml(content)
+  }
+
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Invalid OpenAPI/Swagger content')
+  }
+
+  const doc = parsed as Record<string, unknown>
+
+  const originalVersion = (doc.swagger ?? doc.openapi) as string | undefined
+  if (!originalVersion) {
+    throw new Error('Missing swagger or openapi version field')
+  }
+
+  const wasConverted = !!doc.swagger
+
+  // Upgrade to OpenAPI 3.x (currently 3.2 as of @scalar/openapi-upgrader ^0.2.0)
+  const upgraded = upgrade(doc, '3.1') as unknown as Record<string, unknown> & { info: { title: string } }
+  const upgradedVersion = (upgraded.openapi ?? originalVersion) as string
+
+  // Lint — warn only, never block upload
+  const warnings: string[] = []
+  try {
+    const results = await spectral.run(upgraded)
+    for (const r of results) {
+      if (r.severity === 0 || r.severity === 1) { // error or warn
+        warnings.push(`[${r.path.join('.')}] ${r.message}`)
+      }
+    }
+  } catch {
+    // Lint errors are non-fatal
+  }
+
+  return {
+    spec: upgraded,
+    originalVersion,
+    upgradedVersion,
+    wasConverted,
+    warnings,
+  }
+}
