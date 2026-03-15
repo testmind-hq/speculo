@@ -22,6 +22,13 @@
       "when": 1742000000000,
       "tag": "0002_phase2_teams",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1742000001000,
+      "tag": "0003_spec_hash",
+      "breakpoints": true
     }
   ]
 }

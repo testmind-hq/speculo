@@ -56,6 +56,7 @@ export const specVersions = pgTable('spec_versions', {
   branch: varchar('branch', { length: 200 }).notNull(),
   commitSha: varchar('commit_sha', { length: 40 }),
   specContent: text('spec_content').notNull(),
+  specHash: varchar('spec_hash', { length: 64 }),
   endpointCount: integer('endpoint_count').default(0).notNull(),
   isLatest: boolean('is_latest').default(true).notNull(),
   uploadedAt: timestamp('uploaded_at', { withTimezone: true }).defaultNow().notNull(),

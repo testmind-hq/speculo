@@ -1,5 +1,6 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
-import { sql, eq } from 'drizzle-orm'
+import { sql, eq, and, ne } from 'drizzle-orm'
+import { createHash } from 'node:crypto'
 import { db } from '../db/index.js'
 import { services, specVersions, endpointIndex } from '../db/schema.js'
 import { uploadAuth } from '../middleware/uploadAuth.js'
@@ -52,6 +53,7 @@ uploadRouter.openapi(createRoute({
             endpointCount: z.number(),
             wasConverted: z.boolean(),
             warnings: z.array(z.string()),
+            unchanged: z.boolean().optional().describe('true when spec hash matches current latest — no write performed'),
           }),
         },
       },
@@ -102,19 +104,32 @@ uploadRouter.openapi(createRoute({
   }
 
   const specJson = JSON.stringify(normalized.spec)
+  const specHash = createHash('sha256').update(specJson).digest('hex')
   const endpointRows = extractEndpoints(normalized.spec as any, service, branch, 'pending')
 
+  // Upsert service — assign to default team on first creation
+  const defaultTeamId = await getDefaultTeamId()
+  await db.insert(services).values({ name: service!, teamId: defaultTeamId }).onConflictDoNothing()
+  const [svc] = await db.select({ id: services.id }).from(services).where(eq(services.name, service!))
+
+  // Dedup: if the current latest has the same hash, skip the write entirely
+  const [current] = await db
+    .select({ id: specVersions.id, specHash: specVersions.specHash })
+    .from(specVersions)
+    .where(sql`${specVersions.serviceId} = ${svc.id} AND ${specVersions.branch} = ${branch} AND ${specVersions.isLatest} = true`)
+
+  if (current?.specHash === specHash) {
+    return c.json({
+      service,
+      branch,
+      endpointCount: endpointRows.length,
+      wasConverted: normalized.wasConverted,
+      warnings: normalized.warnings,
+      unchanged: true,
+    }, 200 as const)
+  }
+
   await db.transaction(async (tx) => {
-    // Upsert service — assign to default team on first creation
-    const defaultTeamId = await getDefaultTeamId()
-    await tx.insert(services).values({ name: service!, teamId: defaultTeamId }).onConflictDoNothing()
-    const [svc] = await tx.select({ id: services.id }).from(services).where(eq(services.name, service!))
-
-    // Find current latest
-    const [current] = await tx.select({ id: specVersions.id })
-      .from(specVersions)
-      .where(sql`${specVersions.serviceId} = ${svc.id} AND ${specVersions.branch} = ${branch} AND ${specVersions.isLatest} = true`)
-
     // Unset previous latest
     await tx.update(specVersions)
       .set({ isLatest: false })
@@ -126,14 +141,25 @@ uploadRouter.openapi(createRoute({
       branch: branch!,
       commitSha: commitSha ?? null,
       specContent: specJson,
+      specHash,
       endpointCount: endpointRows.length,
       isLatest: true,
     }).returning({ id: specVersions.id })
 
-    // Delete old endpoint index
+    // Delete old endpoint index rows for this service+branch (cascades via specId)
     if (current) {
       await tx.delete(endpointIndex).where(eq(endpointIndex.specId, current.id))
     }
+
+    // Delete all non-latest spec_versions for this service+branch (keep storage bounded)
+    await tx.delete(specVersions).where(
+      and(
+        eq(specVersions.serviceId, svc.id),
+        eq(specVersions.branch, branch!),
+        ne(specVersions.id, newSpec.id),
+        eq(specVersions.isLatest, false),
+      )
+    )
 
     // Insert new endpoint index
     if (endpointRows.length > 0) {
@@ -152,5 +178,6 @@ uploadRouter.openapi(createRoute({
     endpointCount: endpointRows.length,
     wasConverted: normalized.wasConverted,
     warnings: normalized.warnings,
+    unchanged: false,
   }, 200 as const)
 })
