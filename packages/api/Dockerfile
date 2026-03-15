@@ -1,10 +1,11 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-COPY package.json pnpm-workspace.yaml ./
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY packages/api/package.json packages/api/
+COPY packages/web/package.json packages/web/
 
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN corepack enable && pnpm install --frozen-lockfile --filter @speculo/api...
 
 COPY packages/api/ packages/api/
 RUN pnpm --filter @speculo/api build
