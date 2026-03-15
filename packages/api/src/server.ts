@@ -44,7 +44,17 @@ app.doc('/openapi.json', {
     title: 'Speculo API',
     version: '0.1.0',
     description: 'Self-hosted internal API documentation platform with MCP support',
+    contact: { name: 'Speculo', url: 'https://github.com/yuchou87/speculo' },
   },
+  servers: [{ url: '/' }],
+  tags: [
+    { name: 'Auth', description: 'Authentication and account management' },
+    { name: 'MCP Tokens', description: 'MCP token lifecycle management' },
+    { name: 'Upload', description: 'OpenAPI spec upload and indexing' },
+    { name: 'Catalog', description: 'Service and branch discovery' },
+    { name: 'Specs', description: 'Raw OpenAPI spec access' },
+    { name: 'Search', description: 'Full-text endpoint search' },
+  ],
 })
 
 // Scalar UI

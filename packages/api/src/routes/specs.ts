@@ -11,8 +11,10 @@ specsRouter.use('/api/specs/*', jwtAuth)
 specsRouter.openapi(createRoute({
   method: 'get',
   path: '/api/specs/{service}/{branch}/openapi.json',
+  operationId: 'getSpec',
   tags: ['Specs'],
   summary: 'Get the raw OpenAPI JSON for a service branch',
+  description: 'Returns the latest normalized OpenAPI 3.x document for the given service and branch.',
   security: [{ bearerAuth: [] }],
   request: {
     params: z.object({ service: z.string(), branch: z.string() }),

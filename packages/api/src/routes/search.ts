@@ -21,8 +21,10 @@ const EndpointResultSchema = z.object({
 searchRouter.openapi(createRoute({
   method: 'get',
   path: '/api/search',
+  operationId: 'searchEndpoints',
   tags: ['Search'],
   summary: 'Search endpoints across all services',
+  description: 'Full-text search across endpoint paths, summaries, and operationIds. Returns up to 10 results.',
   security: [{ bearerAuth: [] }],
   request: {
     query: z.object({

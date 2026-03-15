@@ -26,8 +26,10 @@ const TokenSchema = z.object({
 authRouter.openapi(createRoute({
   method: 'post',
   path: '/auth/register',
+  operationId: 'registerUser',
   tags: ['Auth'],
   summary: 'Register a new account',
+  description: 'Create a new user account and return a signed JWT.',
   request: {
     body: {
       content: { 'application/json': { schema: z.object({ email: z.string().email(), password: z.string().min(8) }) } },
@@ -54,8 +56,10 @@ authRouter.openapi(createRoute({
 authRouter.openapi(createRoute({
   method: 'post',
   path: '/auth/login',
+  operationId: 'loginUser',
   tags: ['Auth'],
   summary: 'Log in and receive a JWT',
+  description: 'Authenticate with email and password and receive a signed JWT.',
   request: {
     body: {
       content: { 'application/json': { schema: z.object({ email: z.string().email(), password: z.string() }) } },
@@ -82,8 +86,10 @@ authRouter.openapi(createRoute({
 authRouter.openapi(createRoute({
   method: 'get',
   path: '/api/tokens',
+  operationId: 'listTokens',
   tags: ['MCP Tokens'],
   summary: 'List MCP tokens for the current user',
+  description: 'Returns all MCP tokens belonging to the authenticated user.',
   security: [{ bearerAuth: [] }],
   responses: {
     200: { content: { 'application/json': { schema: z.object({ tokens: z.array(TokenSchema) }) } }, description: 'Token list' },
@@ -104,8 +110,10 @@ authRouter.openapi(createRoute({
 authRouter.openapi(createRoute({
   method: 'post',
   path: '/api/tokens',
+  operationId: 'createToken',
   tags: ['MCP Tokens'],
   summary: 'Create an MCP token',
+  description: 'Create a new MCP token. The full token value is returned once and cannot be retrieved again.',
   security: [{ bearerAuth: [] }],
   request: {
     body: {
@@ -138,8 +146,10 @@ authRouter.openapi(createRoute({
 authRouter.openapi(createRoute({
   method: 'delete',
   path: '/api/tokens/{id}',
+  operationId: 'deleteToken',
   tags: ['MCP Tokens'],
   summary: 'Revoke an MCP token',
+  description: 'Revoke and permanently delete an MCP token.',
   security: [{ bearerAuth: [] }],
   request: { params: z.object({ id: z.string() }) },
   responses: {

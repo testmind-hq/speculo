@@ -24,8 +24,10 @@ const ServiceSchema = z.object({
 catalogRouter.openapi(createRoute({
   method: 'get',
   path: '/api/catalog',
+  operationId: 'getCatalog',
   tags: ['Catalog'],
   summary: 'List all services and their branches',
+  description: 'Returns all services with their branches and latest endpoint counts.',
   security: [{ bearerAuth: [] }],
   responses: {
     200: {

@@ -14,6 +14,7 @@ uploadRouter.use('/api/upload', uploadAuth)
 uploadRouter.openapi(createRoute({
   method: 'post',
   path: '/api/upload',
+  operationId: 'uploadSpec',
   tags: ['Upload'],
   summary: 'Upload an OpenAPI spec for a service',
   description: 'Accepts multipart/form-data (with a `file` field) or application/json (with `specContent` string). Auth: JWT or write-scope MCP token.',
