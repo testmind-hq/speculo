@@ -1,4 +1,5 @@
 import { serve } from '@hono/node-server'
+import { serveStatic } from '@hono/node-server/serve-static'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 import { cors } from 'hono/cors'
@@ -48,10 +49,12 @@ app.doc('/openapi.json', {
 // Scalar UI
 app.get('/api-docs', Scalar({ url: '/openapi.json', theme: 'purple' }))
 
-app.get('/', (c) => c.json({ name: 'Speculo API', version: '0.1.0' }))
+// Serve React SPA static files (production build at ./public)
+app.use('*', serveStatic({ root: './public' }))
+app.use('*', serveStatic({ path: 'index.html', root: './public' }))
 
 serve({ fetch: app.fetch, port: env.PORT }, () => {
-  console.log(`Speculo API running on http://localhost:${env.PORT}`)
+  console.log(`Speculo running on http://localhost:${env.PORT}`)
   console.log(`API docs: http://localhost:${env.PORT}/api-docs`)
 })
 
