@@ -1,12 +1,23 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
+import { verify } from 'hono/jwt'
 import { eq, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { services, specVersions } from '../db/schema.js'
-import { jwtAuth } from '../middleware/jwtAuth.js'
+import { env } from '../env.js'
 
 export const docsRouter = new Hono()
 
-docsRouter.get('/docs/:service/:branch', jwtAuth, async (c) => {
+docsRouter.get('/docs/:service/:branch', async (c) => {
+  // Browser navigation: redirect to login instead of returning JSON 401
+  const auth = c.req.header('Authorization')
+  const token = auth?.startsWith('Bearer ') ? auth.slice(7) : getCookie(c, 'speculo_token')
+  if (!token) return c.redirect('/login', 302)
+  try {
+    await verify(token, env.JWT_SECRET, 'HS256')
+  } catch {
+    return c.redirect('/login', 302)
+  }
   const { service, branch } = c.req.param()
 
   const [row] = await db
