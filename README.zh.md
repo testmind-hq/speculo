@@ -21,8 +21,11 @@
 git clone https://github.com/yuchou87/speculo.git
 cd speculo
 
-# 设置足够强度的 JWT 密钥
-JWT_SECRET=your_secret_here_min_32_chars docker compose up
+# 生成安全的 JWT 密钥
+openssl rand -base64 32
+
+# 使用生成的密钥启动
+JWT_SECRET=<粘贴生成的密钥> docker compose up
 ```
 
 API 将在 `http://localhost:3000` 运行。通过 API 注册第一个账号：

@@ -21,8 +21,11 @@ Self-hosted internal API documentation platform. Teams push OpenAPI specs to Spe
 git clone https://github.com/yuchou87/speculo.git
 cd speculo
 
-# Set a strong JWT secret
-JWT_SECRET=your_secret_here_min_32_chars docker compose up
+# Generate a secure JWT secret
+openssl rand -base64 32
+
+# Start with the generated secret
+JWT_SECRET=<paste-generated-secret> docker compose up
 ```
 
 The API is available at `http://localhost:3000`. Register your first account via the API:
