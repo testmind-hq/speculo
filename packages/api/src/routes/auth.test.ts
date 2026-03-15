@@ -21,7 +21,12 @@ vi.mock('../db/index.js', () => {
         returning: vi.fn().mockResolvedValue([]),
       }),
     }),
-    query: { users: { findFirst: vi.fn() } },
+    query: {
+      users: {
+        // Default: returns a super_admin user for jwtAuth and register route lookups
+        findFirst: vi.fn().mockResolvedValue({ id: 'user-1', role: 'super_admin', isActive: true }),
+      },
+    },
   }
   return { db: mockDb }
 })
@@ -48,10 +53,20 @@ async function makeToken(userId = 'user-1') {
 }
 
 describe('POST /auth/register', () => {
-  it('returns 400 for missing fields', async () => {
+  it('returns 401 without JWT', async () => {
     const res = await app.request('/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'test@test.com', password: 'password123' }),
+    })
+    expect(res.status).toBe(401)
+  })
+
+  it('returns 400 for missing fields when authenticated', async () => {
+    const token = await makeToken('user-1')
+    const res = await app.request('/auth/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
       body: JSON.stringify({ email: 'test@test.com' }),
     })
     expect(res.status).toBe(400)

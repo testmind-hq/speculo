@@ -17,15 +17,72 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json()
 }
 
+export type Service = {
+  id: string
+  name: string
+  displayName: string | null
+  teamId: string | null
+  teamName: string | null
+  branches: { branch: string; endpointCount: number; uploadedAt: string }[]
+}
+
+export type Team = {
+  id: string
+  name: string
+  displayName: string | null
+  description: string | null
+  isDefault: boolean
+  isDeletable: boolean
+  createdAt: string
+}
+
+export type TeamMember = {
+  id: string
+  userId: string
+  email: string
+  role: 'owner' | 'member'
+  joinedAt: string
+}
+
+export type Grant = {
+  id: string
+  ownerTeamId: string
+  serviceId: string
+  serviceName: string
+  branches: string[] | null
+  granteeTeamId: string | null
+  granteeUserId: string | null
+  grantedBy: string
+  expiresAt: string | null
+  createdAt: string
+}
+
+export type User = {
+  id: string
+  email: string
+  role: string
+  isActive: boolean
+  createdAt: string
+  teams: { id: string; name: string; role: string }[]
+}
+
+export type Me = {
+  id: string
+  email: string
+  role: string
+  teams: { id: string; name: string; displayName: string | null; role: string }[]
+}
+
 export const api = {
   login: (email: string, password: string) =>
-    request<{ token: string }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
+    request<{ token: string; userId: string; role: string }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
 
   register: (email: string, password: string) =>
-    request<{ token: string }>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) }),
+    request<{ userId: string }>('/auth/register', { method: 'POST', body: JSON.stringify({ email, password }) }),
 
-  catalog: () =>
-    request<{ services: Array<{ id: string; name: string; displayName: string | null; branches: Array<{ branch: string; endpointCount: number; uploadedAt: string }> }> }>('/api/catalog'),
+  me: () => request<Me>('/api/me'),
+
+  catalog: () => request<{ services: Service[] }>('/api/catalog'),
 
   upload: (formData: FormData) =>
     fetch('/api/upload', { method: 'POST', headers: authHeaders(), body: formData })
@@ -37,5 +94,45 @@ export const api = {
       request<{ id: string; name: string; scope: string; token: string }>('/api/tokens', { method: 'POST', body: JSON.stringify({ name, scope }) }),
     delete: (id: string) =>
       request<{ ok: boolean }>(`/api/tokens/${id}`, { method: 'DELETE' }),
+  },
+
+  admin: {
+    teams: {
+      list: () => request<{ teams: Team[] }>('/api/admin/teams'),
+      create: (data: { name: string; displayName?: string; description?: string }) =>
+        request<Team>('/api/admin/teams', { method: 'POST', body: JSON.stringify(data) }),
+      update: (id: string, data: { displayName?: string; description?: string }) =>
+        request<Team>(`/api/admin/teams/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      delete: (id: string) =>
+        request<{ ok: boolean }>(`/api/admin/teams/${id}`, { method: 'DELETE' }),
+    },
+    members: {
+      list: (teamId: string) => request<{ members: TeamMember[] }>(`/api/admin/teams/${teamId}/members`),
+      add: (teamId: string, userId: string, role: 'owner' | 'member') =>
+        request<{ ok: boolean }>(`/api/admin/teams/${teamId}/members`, { method: 'POST', body: JSON.stringify({ userId, role }) }),
+      updateRole: (teamId: string, userId: string, role: 'owner' | 'member') =>
+        request<{ ok: boolean }>(`/api/admin/teams/${teamId}/members/${userId}`, { method: 'PUT', body: JSON.stringify({ role }) }),
+      remove: (teamId: string, userId: string) =>
+        request<{ ok: boolean }>(`/api/admin/teams/${teamId}/members/${userId}`, { method: 'DELETE' }),
+    },
+    services: {
+      list: (teamId: string) => request<{ services: Pick<Service, 'id' | 'name' | 'displayName'>[] }>(`/api/admin/teams/${teamId}/services`),
+      assign: (serviceId: string, teamId: string | null) =>
+        request<{ ok: boolean }>(`/api/admin/services/${serviceId}/team`, { method: 'PUT', body: JSON.stringify({ teamId }) }),
+    },
+    grants: {
+      list: (teamId: string) => request<{ outgoing: Grant[]; incoming: Grant[] }>(`/api/admin/teams/${teamId}/grants`),
+      create: (teamId: string, data: { serviceId: string; branches?: string[]; granteeTeamId?: string; granteeUserId?: string; expiresAt?: string }) =>
+        request<{ id: string }>(`/api/admin/teams/${teamId}/grants`, { method: 'POST', body: JSON.stringify(data) }),
+      delete: (id: string) =>
+        request<{ ok: boolean }>(`/api/admin/grants/${id}`, { method: 'DELETE' }),
+    },
+    users: {
+      list: () => request<{ users: User[] }>('/api/admin/users'),
+      update: (id: string, data: { role?: string; isActive?: boolean }) =>
+        request<{ ok: boolean }>(`/api/admin/users/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+      delete: (id: string) =>
+        request<{ ok: boolean }>(`/api/admin/users/${id}`, { method: 'DELETE' }),
+    },
   },
 }

@@ -1,6 +1,20 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
-import { jwtAuth } from './jwtAuth.js'
+
+vi.mock('../db/index.js', () => ({
+  db: {
+    query: {
+      users: {
+        findFirst: vi.fn().mockResolvedValue({ role: 'guest', isActive: true }),
+      },
+    },
+  },
+}))
+
+process.env.DATABASE_URL = 'postgresql://x:x@localhost/x'
+process.env.JWT_SECRET = 'a'.repeat(32)
+
+const { jwtAuth } = await import('./jwtAuth.js')
 
 describe('jwtAuth middleware', () => {
   it('rejects requests with no Authorization header', async () => {

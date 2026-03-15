@@ -15,6 +15,13 @@
       "when": 1773543471266,
       "tag": "0001_exotic_pyro",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1742000000000,
+      "tag": "0002_phase2_teams",
+      "breakpoints": true
     }
   ]
 }

@@ -2,11 +2,16 @@ import { Link, useNavigate } from 'react-router-dom'
 
 export default function Nav() {
   const navigate = useNavigate()
+  const role = localStorage.getItem('speculo_role') ?? ''
+  const isAdmin = role === 'super_admin' || role === 'team_owner'
+
   async function logout() {
     localStorage.removeItem('speculo_token')
+    localStorage.removeItem('speculo_role')
     await fetch('/auth/logout', { method: 'POST' }).catch(() => {})
     navigate('/login')
   }
+
   return (
     <nav className="border-b border-gray-800 bg-gray-900 px-4 py-3">
       <div className="container mx-auto flex items-center justify-between">
@@ -14,6 +19,10 @@ export default function Nav() {
         <div className="flex items-center gap-4 text-sm">
           <Link to="/import" className="text-gray-400 hover:text-white">Import</Link>
           <Link to="/settings/tokens" className="text-gray-400 hover:text-white">Tokens</Link>
+          {isAdmin && <>
+            <Link to="/admin/teams" className="text-gray-400 hover:text-white">Teams</Link>
+            {role === 'super_admin' && <Link to="/admin/users" className="text-gray-400 hover:text-white">Users</Link>}
+          </>}
           <button onClick={logout} className="text-gray-500 hover:text-white">Logout</button>
         </div>
       </div>

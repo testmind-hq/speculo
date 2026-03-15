@@ -77,7 +77,7 @@ authRouter.openapi(createRoute({
     },
   },
   responses: {
-    200: { content: { 'application/json': { schema: z.object({ token: z.string(), userId: z.string() }) } }, description: 'Login successful' },
+    200: { content: { 'application/json': { schema: z.object({ token: z.string(), userId: z.string(), role: z.string() }) } }, description: 'Login successful' },
     401: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Invalid credentials' },
   },
 }), async (c) => {
@@ -87,11 +87,11 @@ authRouter.openapi(createRoute({
   const valid = await bcrypt.compare(password, user.passwordHash)
   if (!valid) return c.json({ error: 'Invalid credentials' }, 401 as const)
   const token = await sign(
-    { userId: user.id, exp: Math.floor(Date.now() / 1000) + env.JWT_EXPIRY_DAYS * 86400 },
+    { userId: user.id, role: user.role, exp: Math.floor(Date.now() / 1000) + env.JWT_EXPIRY_DAYS * 86400 },
     env.JWT_SECRET
   )
   setAuthCookie(c, token)
-  return c.json({ token, userId: user.id }, 200 as const)
+  return c.json({ token, userId: user.id, role: user.role }, 200 as const)
 })
 
 authRouter.openapi(createRoute({

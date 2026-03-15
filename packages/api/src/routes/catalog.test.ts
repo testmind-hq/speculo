@@ -5,17 +5,21 @@ vi.mock('../db/index.js', () => ({
   db: {
     select: vi.fn(() => ({
       from: vi.fn(() => ({
-        innerJoin: vi.fn(() => ({
-          orderBy: vi.fn().mockResolvedValue([
-            {
-              id: 'svc-1',
-              name: 'user-service',
-              displayName: 'User Service',
-              branch: 'main',
-              endpointCount: 5,
-              uploadedAt: new Date(),
-            },
-          ]),
+        leftJoin: vi.fn(() => ({
+          innerJoin: vi.fn(() => ({
+            orderBy: vi.fn().mockResolvedValue([
+              {
+                id: 'svc-1',
+                name: 'user-service',
+                displayName: 'User Service',
+                teamId: null,
+                teamName: null,
+                branch: 'main',
+                endpointCount: 5,
+                uploadedAt: new Date(),
+              },
+            ]),
+          })),
         })),
       })),
     })),

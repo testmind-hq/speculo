@@ -6,6 +6,7 @@ import { uploadAuth } from '../middleware/uploadAuth.js'
 import { normalizeSpec } from '../services/specProcessor.js'
 import { extractEndpoints } from '../services/indexBuilder.js'
 import { specCache } from '../services/cache.js'
+import { getDefaultTeamId } from '../services/permissions.js'
 
 export const uploadRouter = new OpenAPIHono()
 
@@ -104,8 +105,9 @@ uploadRouter.openapi(createRoute({
   const endpointRows = extractEndpoints(normalized.spec as any, service, branch, 'pending')
 
   await db.transaction(async (tx) => {
-    // Upsert service
-    await tx.insert(services).values({ name: service! }).onConflictDoNothing()
+    // Upsert service — assign to default team on first creation
+    const defaultTeamId = await getDefaultTeamId()
+    await tx.insert(services).values({ name: service!, teamId: defaultTeamId }).onConflictDoNothing()
     const [svc] = await tx.select({ id: services.id }).from(services).where(eq(services.name, service!))
 
     // Find current latest

@@ -14,6 +14,7 @@ import { searchRouter } from './routes/search.js'
 import { docsRouter } from './routes/docs.js'
 import { llmsRouter } from './routes/llms.js'
 import { mcpRouter } from './mcp/transport.js'
+import { adminRouter } from './routes/admin.js'
 
 const app = new OpenAPIHono()
 
@@ -36,6 +37,7 @@ app.route('/', searchRouter)
 app.route('/', docsRouter)
 app.route('/', llmsRouter)
 app.route('/', mcpRouter)
+app.route('/', adminRouter)
 
 // OpenAPI spec endpoint
 app.doc('/openapi.json', {
@@ -54,6 +56,7 @@ app.doc('/openapi.json', {
     { name: 'Catalog', description: 'Service and branch discovery' },
     { name: 'Specs', description: 'Raw OpenAPI spec access' },
     { name: 'Search', description: 'Full-text endpoint search' },
+    { name: 'Admin', description: 'Team, user, and grant management (super_admin / team_owner)' },
   ],
 })
 

@@ -115,6 +115,13 @@ The workflow triggers automatically when `openapi.yaml` (or equivalent) changes 
 
 Optionally create a `.speculo-service` file in your repo root to override the service name (defaults to the repository name).
 
+### Via GitLab CI
+
+Copy `.gitlab-ci-template.yml` from this repo to your service repo as `.gitlab-ci.yml`, then set CI/CD variables:
+
+- **Variable** `SPECULO_URL` — your Speculo instance URL
+- **Masked secret** `SPECULO_TOKEN` — a write-scope MCP token
+
 ## Connecting an MCP Client
 
 1. Sign in to Speculo and go to **MCP Tokens**
@@ -146,23 +153,53 @@ Example config:
 | `get_schema_detail` | A specific component schema |
 | `get_service_markdown` | Entire service spec as Markdown |
 
+## Team Management
+
+Teams are the permission boundary: each service belongs to a team, and users belong to teams. Super admins manage all teams; team owners manage their own team's members, services, and grants.
+
+### Roles
+
+| Role | Scope | Capabilities |
+|---|---|---|
+| `super_admin` | Global | Manage all teams, users, services |
+| `team_owner` | Team | Manage members, services, cross-team grants |
+| `team_member` | Team | Access all services owned by team |
+| `guest` | Explicit grants only | Access only explicitly granted services |
+
+### Cross-Team Grants
+
+A team owner can grant another team (or a specific user) access to one of their services, optionally scoped to specific branches and with an expiry date. Manage grants at `/admin/teams/:id/grants`.
+
 ## API Reference
 
 | Method | Path | Auth | Description |
 |---|---|---|---|
-| `POST` | `/auth/register` | — | Create account |
+| `POST` | `/auth/register` | JWT (super_admin) | Create account |
 | `POST` | `/auth/login` | — | Get JWT |
+| `POST` | `/auth/logout` | — | Clear session cookie |
+| `GET` | `/api/me` | JWT | Current user info + teams |
 | `GET` | `/api/tokens` | JWT | List MCP tokens |
 | `POST` | `/api/tokens` | JWT | Create MCP token |
 | `DELETE` | `/api/tokens/:id` | JWT | Revoke MCP token |
 | `POST` | `/api/upload` | JWT or write MCP token | Upload spec |
-| `GET` | `/api/catalog` | JWT | List all services |
-| `GET` | `/api/search?q=` | JWT | Search endpoints |
+| `GET` | `/api/catalog` | JWT | List all services (with team info) |
+| `GET` | `/api/search?q=` | JWT | Full-text endpoint search (tsvector) |
 | `GET` | `/api/specs/:service/:branch/openapi.json` | JWT | Raw spec JSON |
-| `GET` | `/docs/:service/:branch` | JWT | Scalar docs UI |
+| `GET` | `/docs/:service/:branch` | JWT cookie | Scalar docs UI |
 | `GET` | `/docs/:service/:branch/llms.txt` | — | LLM-readable summary |
 | `POST` | `/mcp` | read MCP token | MCP JSON-RPC |
 | `GET` | `/mcp` | read MCP token | MCP SSE stream |
+| `GET` | `/api/admin/teams` | JWT (super_admin) | List teams |
+| `POST` | `/api/admin/teams` | JWT (super_admin) | Create team |
+| `GET` | `/api/admin/teams/:id/members` | JWT (owner+) | List members |
+| `POST` | `/api/admin/teams/:id/members` | JWT (owner+) | Add member |
+| `GET` | `/api/admin/teams/:id/services` | JWT (owner+) | List team services |
+| `GET` | `/api/admin/teams/:id/grants` | JWT (owner+) | List grants |
+| `POST` | `/api/admin/teams/:id/grants` | JWT (owner+) | Create grant |
+| `DELETE` | `/api/admin/grants/:id` | JWT (owner+) | Revoke grant |
+| `GET` | `/api/admin/users` | JWT (super_admin) | List users |
+| `PUT` | `/api/admin/users/:id` | JWT (super_admin) | Update user role/status |
+| `DELETE` | `/api/admin/users/:id` | JWT (super_admin) | Delete user |
 
 ## Tech Stack
 

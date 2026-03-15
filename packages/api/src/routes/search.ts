@@ -42,9 +42,16 @@ searchRouter.openapi(createRoute({
 
   if (!q?.trim()) return c.json({ error: 'Missing query parameter q' }, 400 as const)
 
-  const pattern = `%${q}%`
+  // Use tsvector full-text search when search_vector column is populated; fall back to ILIKE
+  const tsQuery = q.trim().split(/\s+/).filter(Boolean).join(' & ')
   const conditions = [
-    sql`(${endpointIndex.path} ILIKE ${pattern} OR ${endpointIndex.summary} ILIKE ${pattern} OR ${endpointIndex.operationId} ILIKE ${pattern})`,
+    sql`(
+      (${endpointIndex.searchVector} @@ to_tsquery('english', ${tsQuery}))
+      OR
+      (${endpointIndex.path} ILIKE ${'%' + q + '%'}
+        OR ${endpointIndex.summary} ILIKE ${'%' + q + '%'}
+        OR ${endpointIndex.operationId} ILIKE ${'%' + q + '%'})
+    )`,
   ]
   if (service) conditions.push(eq(endpointIndex.serviceName, service))
   if (branch) conditions.push(eq(endpointIndex.branch, branch))

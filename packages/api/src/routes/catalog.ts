@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
 import { eq, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { services, specVersions } from '../db/schema.js'
+import { services, specVersions, teams } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
 
 export const catalogRouter = new OpenAPIHono()
@@ -18,6 +18,8 @@ const ServiceSchema = z.object({
   id: z.string(),
   name: z.string(),
   displayName: z.string().nullable(),
+  teamId: z.string().nullable(),
+  teamName: z.string().nullable(),
   branches: z.array(BranchSchema),
 })
 
@@ -27,7 +29,7 @@ catalogRouter.openapi(createRoute({
   operationId: 'getCatalog',
   tags: ['Catalog'],
   summary: 'List all services and their branches',
-  description: 'Returns all services with their branches and latest endpoint counts.',
+  description: 'Returns all services with their branches, latest endpoint counts, and team assignments.',
   security: [{ bearerAuth: [] }],
   responses: {
     200: {
@@ -41,18 +43,36 @@ catalogRouter.openapi(createRoute({
       id: services.id,
       name: services.name,
       displayName: services.displayName,
+      teamId: services.teamId,
+      teamName: teams.name,
       branch: specVersions.branch,
       endpointCount: specVersions.endpointCount,
       uploadedAt: specVersions.uploadedAt,
     })
     .from(services)
+    .leftJoin(teams, eq(teams.id, services.teamId))
     .innerJoin(specVersions, sql`${specVersions.serviceId} = ${services.id} AND ${specVersions.isLatest} = true`)
     .orderBy(services.name, specVersions.branch)
 
-  const map = new Map<string, { id: string; name: string; displayName: string | null; branches: { branch: string; endpointCount: number; uploadedAt: Date }[] }>()
+  const map = new Map<string, {
+    id: string
+    name: string
+    displayName: string | null
+    teamId: string | null
+    teamName: string | null
+    branches: { branch: string; endpointCount: number; uploadedAt: Date }[]
+  }>()
+
   for (const row of rows) {
     if (!map.has(row.id)) {
-      map.set(row.id, { id: row.id, name: row.name, displayName: row.displayName, branches: [] })
+      map.set(row.id, {
+        id: row.id,
+        name: row.name,
+        displayName: row.displayName,
+        teamId: row.teamId,
+        teamName: row.teamName ?? null,
+        branches: [],
+      })
     }
     map.get(row.id)!.branches.push({ branch: row.branch, endpointCount: row.endpointCount, uploadedAt: row.uploadedAt })
   }
