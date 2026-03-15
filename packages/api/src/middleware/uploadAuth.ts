@@ -6,6 +6,13 @@ import { db } from '../db/index.js'
 import { mcpTokens } from '../db/schema.js'
 import { env } from '../env.js'
 
+// Re-export ContextVariableMap augmentation (also declared in jwtAuth.ts)
+declare module 'hono' {
+  interface ContextVariableMap {
+    userId: string
+  }
+}
+
 // Accepts either a valid JWT or a write-scope MCP token
 export const uploadAuth: MiddlewareHandler = async (c, next) => {
   const auth = c.req.header('Authorization')
@@ -17,12 +24,12 @@ export const uploadAuth: MiddlewareHandler = async (c, next) => {
 
   // Try JWT first
   try {
-    const payload = await verify(token, env.JWT_SECRET)
+    const payload = await verify(token, env.JWT_SECRET, 'HS256')
     if (typeof payload.userId !== 'string') throw new Error('bad payload')
     c.set('userId', payload.userId)
     return await next()
   } catch {
-    // Not a valid JWT — try MCP token
+    // Not a valid JWT — fall through to MCP token check
   }
 
   // Try write-scope MCP token
@@ -36,6 +43,11 @@ export const uploadAuth: MiddlewareHandler = async (c, next) => {
     const valid = await bcrypt.compare(token, candidate.tokenHash)
     if (valid) {
       c.set('userId', candidate.userId)
+      // Update last_used_at (fire and forget)
+      db.update(mcpTokens)
+        .set({ lastUsedAt: new Date() })
+        .where(eq(mcpTokens.id, candidate.id))
+        .catch(() => {})
       return await next()
     }
   }
