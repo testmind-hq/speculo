@@ -9,6 +9,7 @@ export const adminRouter = new OpenAPIHono()
 
 // ── Auth middleware ────────────────────────────────────────────────────────────
 adminRouter.use('/api/admin/*', jwtAuth)
+adminRouter.use('/api/me', jwtAuth)
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -198,12 +199,16 @@ adminRouter.openapi(createRoute({
   responses: {
     200: { content: { 'application/json': { schema: z.object({ ok: z.boolean() }) } }, description: 'Updated' },
     403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
+    404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Not found' },
   },
 }), async (c) => {
   if (!isTeamOwnerOrAdmin(c.get('userRole'))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id, userId } = c.req.valid('param')
   const { role } = c.req.valid('json')
-  await db.update(teamMembers).set({ role }).where(and(eq(teamMembers.teamId, id), eq(teamMembers.userId, userId)))
+  const result = await db.update(teamMembers).set({ role })
+    .where(and(eq(teamMembers.teamId, id), eq(teamMembers.userId, userId)))
+    .returning({ id: teamMembers.id })
+  if (!result.length) return c.json({ error: 'Member not found' }, 404 as const)
   return c.json({ ok: true }, 200 as const)
 })
 
@@ -413,8 +418,24 @@ adminRouter.openapi(createRoute({
 }), async (c) => {
   if (!isTeamOwnerOrAdmin(c.get('userRole'))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
-  const result = await db.delete(crossTeamGrants).where(eq(crossTeamGrants.id, id)).returning({ id: crossTeamGrants.id })
-  if (!result.length) return c.json({ error: 'Grant not found' }, 404 as const)
+
+  // Fetch grant first to verify ownership before deleting
+  const grant = await db.query.crossTeamGrants.findFirst({
+    where: eq(crossTeamGrants.id, id),
+    columns: { id: true, ownerTeamId: true },
+  })
+  if (!grant) return c.json({ error: 'Grant not found' }, 404 as const)
+
+  // super_admin may delete any grant; team_owner may only delete grants they own
+  if (c.get('userRole') !== 'super_admin') {
+    const userId = c.get('userId')
+    const membership = await db.query.teamMembers.findFirst({
+      where: and(eq(teamMembers.teamId, grant.ownerTeamId), eq(teamMembers.userId, userId)),
+    })
+    if (!membership) return c.json({ error: 'Forbidden' }, 403 as const)
+  }
+
+  await db.delete(crossTeamGrants).where(eq(crossTeamGrants.id, id))
   return c.json({ ok: true }, 200 as const)
 })
 
@@ -497,12 +518,14 @@ adminRouter.openapi(createRoute({
   responses: {
     200: { content: { 'application/json': { schema: z.object({ ok: z.boolean() }) } }, description: 'Updated' },
     403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
+    404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Not found' },
   },
 }), async (c) => {
   if (!isSuperAdmin(c)) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
   const body = c.req.valid('json')
-  await db.update(users).set(body).where(eq(users.id, id))
+  const result = await db.update(users).set(body).where(eq(users.id, id)).returning({ id: users.id })
+  if (!result.length) return c.json({ error: 'User not found' }, 404 as const)
   return c.json({ ok: true }, 200 as const)
 })
 
@@ -563,5 +586,3 @@ adminRouter.openapi(createRoute({
     .where(eq(teamMembers.userId, userId))
   return c.json({ ...user, teams: memberships }, 200 as const)
 })
-
-adminRouter.use('/api/me', jwtAuth)

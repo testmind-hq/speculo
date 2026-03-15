@@ -42,11 +42,12 @@ searchRouter.openapi(createRoute({
 
   if (!q?.trim()) return c.json({ error: 'Missing query parameter q' }, 400 as const)
 
-  // Use tsvector full-text search when search_vector column is populated; fall back to ILIKE
-  const tsQuery = q.trim().split(/\s+/).filter(Boolean).join(' & ')
+  // Use tsvector full-text search with websearch_to_tsquery (safe for arbitrary user input,
+  // handles punctuation and stop-words gracefully without throwing). Fall back to ILIKE so
+  // rows inserted before the search_vector trigger also match.
   const conditions = [
     sql`(
-      (${endpointIndex.searchVector} @@ to_tsquery('english', ${tsQuery}))
+      (${endpointIndex.searchVector} @@ websearch_to_tsquery('english', ${q}))
       OR
       (${endpointIndex.path} ILIKE ${'%' + q + '%'}
         OR ${endpointIndex.summary} ILIKE ${'%' + q + '%'}

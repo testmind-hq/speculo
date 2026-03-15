@@ -1,7 +1,7 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
-import { eq, sql } from 'drizzle-orm'
+import { eq, sql, inArray, or, isNull, gt, and } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { services, specVersions, teams } from '../db/schema.js'
+import { services, specVersions, teams, teamMembers, crossTeamGrants } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
 
 export const catalogRouter = new OpenAPIHono()
@@ -29,7 +29,7 @@ catalogRouter.openapi(createRoute({
   operationId: 'getCatalog',
   tags: ['Catalog'],
   summary: 'List all services and their branches',
-  description: 'Returns all services with their branches, latest endpoint counts, and team assignments.',
+  description: 'Returns services accessible to the authenticated user with their branches and team assignments.',
   security: [{ bearerAuth: [] }],
   responses: {
     200: {
@@ -38,6 +38,46 @@ catalogRouter.openapi(createRoute({
     },
   },
 }), async (c) => {
+  const userId = c.get('userId')
+  const userRole = c.get('userRole')
+
+  // Build a set of accessible service IDs based on role
+  let accessibleServiceIds: Set<string> | null = null // null = all services
+
+  if (userRole !== 'super_admin') {
+    // Fetch user's team memberships
+    const userTeamRows = await db
+      .select({ teamId: teamMembers.teamId })
+      .from(teamMembers)
+      .where(eq(teamMembers.userId, userId))
+    const userTeamIds = userTeamRows.map(r => r.teamId)
+
+    // Services owned by user's teams
+    const ownedServices = userTeamIds.length > 0
+      ? await db
+        .select({ id: services.id })
+        .from(services)
+        .where(inArray(services.teamId, userTeamIds))
+      : []
+
+    // Services granted to the user's teams or directly to the user
+    const grantedServices = await db
+      .select({ serviceId: crossTeamGrants.serviceId })
+      .from(crossTeamGrants)
+      .where(and(
+        or(
+          userTeamIds.length > 0 ? inArray(crossTeamGrants.granteeTeamId, userTeamIds) : sql`false`,
+          eq(crossTeamGrants.granteeUserId, userId),
+        ),
+        or(isNull(crossTeamGrants.expiresAt), gt(crossTeamGrants.expiresAt, new Date())),
+      ))
+
+    accessibleServiceIds = new Set([
+      ...ownedServices.map(s => s.id),
+      ...grantedServices.map(g => g.serviceId),
+    ])
+  }
+
   const rows = await db
     .select({
       id: services.id,
@@ -64,6 +104,9 @@ catalogRouter.openapi(createRoute({
   }>()
 
   for (const row of rows) {
+    // Filter by accessible service IDs for non-super_admin users
+    if (accessibleServiceIds && !accessibleServiceIds.has(row.id)) continue
+
     if (!map.has(row.id)) {
       map.set(row.id, {
         id: row.id,

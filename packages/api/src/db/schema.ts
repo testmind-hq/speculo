@@ -1,6 +1,6 @@
 import {
   pgTable, pgEnum, uuid, varchar, text, boolean,
-  integer, timestamp, index, customType,
+  integer, timestamp, index, uniqueIndex, customType,
 } from 'drizzle-orm/pg-core'
 
 // tsvector is not a native Drizzle type; customType wraps it for schema declaration
@@ -39,7 +39,7 @@ export const teamMembers = pgTable('team_members', {
   role: teamMemberRoleEnum('role').notNull().default('member'),
   joinedAt: timestamp('joined_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
-  teamUserIdx: index('idx_team_members_team_user').on(t.teamId, t.userId),
+  teamUserUnique: uniqueIndex('idx_team_members_team_user').on(t.teamId, t.userId),
 }))
 
 export const services = pgTable('services', {

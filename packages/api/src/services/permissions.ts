@@ -1,6 +1,6 @@
 import { eq, and, inArray, isNull, or, gt } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { users, services, teamMembers, crossTeamGrants } from '../db/schema.js'
+import { users, services, teams, teamMembers, crossTeamGrants } from '../db/schema.js'
 
 /** Returns true if userId can access the given service branch. */
 export async function canAccessBranch(
@@ -69,7 +69,6 @@ function checkBranch(allowed: string[] | null, branch: string): boolean {
 
 /** Returns the default team id (the `is_default = true` team). */
 export async function getDefaultTeamId(): Promise<string | null> {
-  const { teams } = await import('../db/schema.js')
   const team = await db.query.teams.findFirst({
     where: eq(teams.isDefault, true),
     columns: { id: true },
