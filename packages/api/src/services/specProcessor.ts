@@ -3,8 +3,8 @@ import { upgrade } from '@scalar/openapi-upgrader'
 import { default as spectralCoreModule } from '@stoplight/spectral-core'
 import { oas } from '@stoplight/spectral-rulesets'
 
-const { Spectral } = spectralCoreModule as { Spectral: new () => {
-  setRuleset: (ruleset: unknown) => Promise<void>
+const { Spectral } = spectralCoreModule as unknown as { Spectral: new () => {
+  setRuleset: (ruleset: unknown) => void | Promise<void>
   run: (spec: unknown) => Promise<Array<{ severity: number; path: (string | number)[]; message: string }>>
 } }
 
@@ -43,7 +43,7 @@ export async function normalizeSpec(content: string, filename: string): Promise<
   const wasConverted = !!doc.swagger
 
   // Upgrade to OpenAPI 3.x (currently 3.2 as of @scalar/openapi-upgrader ^0.2.0)
-  const upgraded = upgrade(doc) as Record<string, unknown> & { info: { title: string } }
+  const upgraded = upgrade(doc, '3.1') as unknown as Record<string, unknown> & { info: { title: string } }
   const upgradedVersion = (upgraded.openapi ?? originalVersion) as string
 
   // Lint — warn only, never block upload

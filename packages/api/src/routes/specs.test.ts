@@ -28,7 +28,7 @@ describe('GET /api/specs/:service/:branch/openapi.json', () => {
   it('returns parsed OpenAPI JSON', async () => {
     const res = await app.request('/api/specs/user-service/main/openapi.json')
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const body = await res.json() as any
     expect(body.openapi).toBe('3.1.0')
   })
 

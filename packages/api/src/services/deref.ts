@@ -7,7 +7,7 @@ import { specCache } from './cache.js'
 export async function derefSpec(spec: Record<string, unknown>): Promise<Record<string, unknown>> {
   // dereference() replaces all $ref with actual content
   return await SwaggerParser.dereference(
-    structuredClone(spec) as Parameters<typeof SwaggerParser.dereference>[0]
+    structuredClone(spec) as unknown as Parameters<typeof SwaggerParser.dereference>[0]
   ) as Record<string, unknown>
 }
 

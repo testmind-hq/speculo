@@ -36,7 +36,7 @@ describe('GET /api/catalog', () => {
   it('returns services grouped by name', async () => {
     const res = await app.request('/api/catalog')
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const body = await res.json() as any
     expect(body.services).toHaveLength(1)
     expect(body.services[0].name).toBe('user-service')
     expect(body.services[0].branches).toHaveLength(1)

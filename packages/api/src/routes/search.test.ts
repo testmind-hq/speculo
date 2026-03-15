@@ -34,7 +34,7 @@ describe('GET /api/search', () => {
   it('returns results array', async () => {
     const res = await app.request('/api/search?q=users&service=user-service')
     expect(res.status).toBe(200)
-    const body = await res.json()
+    const body = await res.json() as any
     expect(Array.isArray(body.results)).toBe(true)
   })
 })
