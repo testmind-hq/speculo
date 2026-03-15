@@ -1,0 +1,53 @@
+# .github/workflows/speculo-sync.yml
+# Copy this to your service repos that have an OpenAPI spec
+name: Sync API Docs to Speculo
+
+on:
+  push:
+    branches: ['**']
+    paths:
+      - 'openapi.yaml'
+      - 'openapi.yml'
+      - 'openapi.json'
+      - 'swagger.yaml'
+      - 'swagger.yml'
+      - 'swagger.json'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Find spec file
+        id: find
+        run: |
+          for f in openapi.yaml openapi.yml openapi.json swagger.yaml swagger.yml swagger.json; do
+            if [ -f "$f" ]; then
+              echo "file=$f" >> $GITHUB_OUTPUT
+              break
+            fi
+          done
+
+      - name: Upload to Speculo
+        env:
+          SPECULO_URL: ${{ vars.SPECULO_URL }}
+          SPECULO_TOKEN: ${{ secrets.SPECULO_TOKEN }}
+        run: |
+          SERVICE=$(cat .speculo-service 2>/dev/null || echo "${GITHUB_REPOSITORY##*/}")
+          BRANCH="${GITHUB_REF##*/}"
+          SPEC_CONTENT=$(cat "${{ steps.find.outputs.file }}")
+
+          curl -f -X POST "${SPECULO_URL}/api/upload" \
+            -H "Authorization: Bearer ${SPECULO_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -n \
+              --arg service "$SERVICE" \
+              --arg branch "$BRANCH" \
+              --arg commitSha "$GITHUB_SHA" \
+              --arg specContent "$SPEC_CONTENT" \
+              '{service: $service, branch: $branch, commitSha: $commitSha, specContent: $specContent}')"
