@@ -3,7 +3,7 @@ import { zValidator } from '@hono/zod-validator'
 import { z } from 'zod'
 import bcrypt from 'bcrypt'
 import { sign } from 'hono/jwt'
-import { eq, sql } from 'drizzle-orm'
+import { eq, and } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { users, mcpTokens } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
@@ -23,7 +23,6 @@ authRouter.post('/auth/register', zValidator('json', registerSchema), async (c) 
   const existing = await db.query.users.findFirst({ where: eq(users.email, email) })
   if (existing) return c.json({ error: 'Email already registered' }, 409)
 
-  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(users)
   const role = 'super_admin' as const // MVP: all users are super_admin; RBAC in Phase 2
 
   const passwordHash = await bcrypt.hash(password, 10)
@@ -78,7 +77,7 @@ authRouter.post('/api/tokens', jwtAuth,
     const { name, scope } = c.req.valid('json')
 
     const rawToken = 'speculo_mcp_' + randomBytes(24).toString('base64url')
-    const prefix = rawToken.slice(0, 12) // "speculo_mcp_"
+    const prefix = rawToken.slice(0, 24) // "speculo_mcp_" + first 12 chars of random part
     const tokenHash = await bcrypt.hash(rawToken, 10)
 
     const [token] = await db.insert(mcpTokens)
@@ -94,7 +93,7 @@ authRouter.delete('/api/tokens/:id', jwtAuth, async (c) => {
   const { id } = c.req.param()
   // Filter by both id AND userId to prevent deleting another user's token
   const result = await db.delete(mcpTokens)
-    .where(sql`${mcpTokens.id} = ${id} AND ${mcpTokens.userId} = ${userId}`)
+    .where(and(eq(mcpTokens.id, id), eq(mcpTokens.userId, userId)))
     .returning({ id: mcpTokens.id })
   if (!result.length) return c.json({ error: 'Token not found' }, 404)
   return c.json({ ok: true })

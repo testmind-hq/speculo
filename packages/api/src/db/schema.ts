@@ -51,7 +51,7 @@ export const mcpTokens = pgTable('mcp_tokens', {
   userId: uuid('user_id').references(() => users.id).notNull(),
   name: varchar('name', { length: 200 }).notNull(),
   tokenHash: text('token_hash').notNull(),
-  prefix: varchar('prefix', { length: 12 }).notNull(),
+  prefix: varchar('prefix', { length: 24 }).notNull(),
   scope: tokenScopeEnum('scope').notNull(),
   lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),

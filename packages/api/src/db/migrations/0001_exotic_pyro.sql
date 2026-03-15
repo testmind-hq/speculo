@@ -1,0 +1,1 @@
+ALTER TABLE "mcp_tokens" ALTER COLUMN "prefix" SET DATA TYPE varchar(24);
