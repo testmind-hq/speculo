@@ -28,13 +28,14 @@ openssl rand -base64 32
 JWT_SECRET=<paste-generated-secret> docker compose up
 ```
 
-The API is available at `http://localhost:3000`. Register your first account via the API:
+The app is available at `http://localhost:3000`. A default admin account is created automatically on first startup:
 
-```bash
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"yourpassword"}'
-```
+| Field | Value |
+|---|---|
+| Email | `admin@example.com` |
+| Password | `admin` |
+
+> Change the password after first login.
 
 ### Local Development
 

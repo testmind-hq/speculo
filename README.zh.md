@@ -28,13 +28,14 @@ openssl rand -base64 32
 JWT_SECRET=<粘贴生成的密钥> docker compose up
 ```
 
-API 将在 `http://localhost:3000` 运行。通过 API 注册第一个账号：
+应用将在 `http://localhost:3000` 运行。首次启动时会自动创建默认管理员账号：
 
-```bash
-curl -X POST http://localhost:3000/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{"email":"admin@example.com","password":"yourpassword"}'
-```
+| 字段 | 值 |
+|---|---|
+| 邮箱 | `admin@example.com` |
+| 密码 | `admin` |
+
+> 首次登录后请及时修改密码。
 
 ### 本地开发
 
