@@ -34,6 +34,19 @@ function AdminLayout({ children }: { children: React.ReactNode }) {
   )
 }
 
+function SuperAdminLayout({ children }: { children: React.ReactNode }) {
+  const token = localStorage.getItem('speculo_token')
+  const role = localStorage.getItem('speculo_role')
+  if (!token) return <Navigate to="/login" replace />
+  if (role !== 'super_admin') return <Navigate to="/" replace />
+  return (
+    <div className="min-h-screen">
+      <Nav />
+      <main className="container mx-auto px-4 py-8">{children}</main>
+    </div>
+  )
+}
+
 export default function App() {
   return (
     <Routes>
@@ -41,11 +54,11 @@ export default function App() {
       <Route path="/" element={<PrivateLayout><Catalog /></PrivateLayout>} />
       <Route path="/import" element={<PrivateLayout><Import /></PrivateLayout>} />
       <Route path="/settings/tokens" element={<PrivateLayout><Tokens /></PrivateLayout>} />
-      <Route path="/admin/teams" element={<AdminLayout><AdminTeams /></AdminLayout>} />
+      <Route path="/admin/teams" element={<SuperAdminLayout><AdminTeams /></SuperAdminLayout>} />
       <Route path="/admin/teams/:id/members" element={<AdminLayout><TeamMembers /></AdminLayout>} />
       <Route path="/admin/teams/:id/services" element={<AdminLayout><TeamServices /></AdminLayout>} />
       <Route path="/admin/teams/:id/grants" element={<AdminLayout><TeamGrants /></AdminLayout>} />
-      <Route path="/admin/users" element={<AdminLayout><AdminUsers /></AdminLayout>} />
+      <Route path="/admin/users" element={<SuperAdminLayout><AdminUsers /></SuperAdminLayout>} />
     </Routes>
   )
 }

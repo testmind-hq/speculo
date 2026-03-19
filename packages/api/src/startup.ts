@@ -18,16 +18,16 @@ export async function runStartup() {
 }
 
 async function bootstrapDefaultTeam() {
-  const existing = await db.query.teams.findFirst({ where: eq(teams.isDefault, true) })
-  if (existing) return
-  await db.insert(teams).values({
+  const result = await db.insert(teams).values({
     name: 'default',
     displayName: 'Default Team',
     description: 'Default team for all services',
     isDefault: true,
     isDeletable: false,
-  })
-  console.log('[speculo] Default team created.')
+  }).onConflictDoNothing().returning({ id: teams.id })
+  if (result.length > 0) {
+    console.log('[speculo] Default team created.')
+  }
 }
 
 async function bootstrapAdminUser() {

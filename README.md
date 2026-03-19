@@ -186,7 +186,7 @@ A team owner can grant another team (or a specific user) access to one of their 
 | `GET` | `/api/search?q=` | JWT | Full-text endpoint search (tsvector) |
 | `GET` | `/api/specs/:service/:branch/openapi.json` | JWT | Raw spec JSON |
 | `GET` | `/docs/:service/:branch` | JWT cookie | Scalar docs UI |
-| `GET` | `/docs/:service/:branch/llms.txt` | — | LLM-readable summary |
+| `GET` | `/docs/:service/:branch/llms.txt` | JWT (Bearer/cookie) or read MCP token | LLM-readable summary |
 | `POST` | `/mcp` | read MCP token | MCP JSON-RPC |
 | `GET` | `/mcp` | read MCP token | MCP SSE stream |
 | `GET` | `/api/admin/teams` | JWT (super_admin) | List teams |

@@ -7,7 +7,7 @@ vi.mock('../db/index.js', () => ({
       users:           { findFirst: vi.fn() },
       services:        { findFirst: vi.fn() },
       teamMembers:     { findFirst: vi.fn() },
-      crossTeamGrants: { findFirst: vi.fn() },
+      crossTeamGrants: { findFirst: vi.fn(), findMany: vi.fn() },
     },
     select: vi.fn(() => ({
       from: vi.fn(() => ({
@@ -30,6 +30,7 @@ beforeEach(() => {
   vi.mocked(db.query.services.findFirst).mockResolvedValue(mockService as any)
   vi.mocked(db.query.teamMembers.findFirst).mockResolvedValue(undefined)
   vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValue(undefined)
+  vi.mocked(db.query.crossTeamGrants.findMany).mockResolvedValue([])
   vi.mocked(db.select).mockReturnValue({
     from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
   } as any)
@@ -73,7 +74,7 @@ describe('canAccessBranch', () => {
       from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ teamId: 'team-b' }]) })),
     } as any)
     // Team-b has a grant with branches: null (= all branches)
-    vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValueOnce({ branches: null } as any)
+    vi.mocked(db.query.crossTeamGrants.findMany).mockResolvedValueOnce([{ branches: null }] as any)
     const result = await canAccessBranch('user-1', 'my-service', 'main')
     expect(result).toBe(true)
   })
@@ -84,7 +85,7 @@ describe('canAccessBranch', () => {
       from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
     } as any)
     // User-level grant covering all branches
-    vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValueOnce({ branches: null } as any)
+    vi.mocked(db.query.crossTeamGrants.findMany).mockResolvedValueOnce([{ branches: null }] as any)
     const result = await canAccessBranch('user-1', 'my-service', 'main')
     expect(result).toBe(true)
   })
@@ -95,7 +96,7 @@ describe('canAccessBranch', () => {
       from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
     } as any)
     // User-level grant only allows 'dev' branch
-    vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValueOnce({ branches: ['dev'] } as any)
+    vi.mocked(db.query.crossTeamGrants.findMany).mockResolvedValueOnce([{ branches: ['dev'] }] as any)
     const result = await canAccessBranch('user-1', 'my-service', 'main')
     expect(result).toBe(false)
   })
@@ -104,7 +105,7 @@ describe('canAccessBranch', () => {
     vi.mocked(db.select).mockReturnValueOnce({
       from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ teamId: 'team-b' }]) })),
     } as any)
-    vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValueOnce({ branches: ['main', 'staging'] } as any)
+    vi.mocked(db.query.crossTeamGrants.findMany).mockResolvedValueOnce([{ branches: ['main', 'staging'] }] as any)
     const result = await canAccessBranch('user-1', 'my-service', 'main')
     expect(result).toBe(true)
   })

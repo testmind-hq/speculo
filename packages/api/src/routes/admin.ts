@@ -1,6 +1,5 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
-import { eq, and, sql } from 'drizzle-orm'
-import { hash } from 'bcryptjs'
+import { eq, and } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { users, teams, teamMembers, services, crossTeamGrants } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'

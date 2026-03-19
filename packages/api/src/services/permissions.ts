@@ -39,25 +39,25 @@ export async function canAccessBranch(
   const userTeamIds = userTeams.map(r => r.teamId)
 
   if (userTeamIds.length > 0) {
-    const teamGrant = await db.query.crossTeamGrants.findFirst({
+    const teamGrants = await db.query.crossTeamGrants.findMany({
       where: and(
         eq(crossTeamGrants.serviceId, service.id),
         inArray(crossTeamGrants.granteeTeamId, userTeamIds),
         or(isNull(crossTeamGrants.expiresAt), gt(crossTeamGrants.expiresAt, new Date())),
       ),
     })
-    if (teamGrant) return checkBranch(teamGrant.branches, branch)
+    if (teamGrants.some(g => checkBranch(g.branches, branch))) return true
   }
 
   // Cross-team grants: user-level
-  const userGrant = await db.query.crossTeamGrants.findFirst({
+  const userGrants = await db.query.crossTeamGrants.findMany({
     where: and(
       eq(crossTeamGrants.serviceId, service.id),
       eq(crossTeamGrants.granteeUserId, userId),
       or(isNull(crossTeamGrants.expiresAt), gt(crossTeamGrants.expiresAt, new Date())),
     ),
   })
-  if (userGrant) return checkBranch(userGrant.branches, branch)
+  if (userGrants.some(g => checkBranch(g.branches, branch))) return true
 
   return false
 }

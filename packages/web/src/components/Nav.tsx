@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 export default function Nav() {
   const navigate = useNavigate()
   const role = localStorage.getItem('speculo_role') ?? ''
-  const isAdmin = role === 'super_admin' || role === 'team_owner'
+  const isSuperAdmin = role === 'super_admin'
 
   async function logout() {
     localStorage.removeItem('speculo_token')
@@ -19,9 +19,9 @@ export default function Nav() {
         <div className="flex items-center gap-4 text-sm">
           <Link to="/import" className="text-gray-400 hover:text-white">Import</Link>
           <Link to="/settings/tokens" className="text-gray-400 hover:text-white">Tokens</Link>
-          {isAdmin && <>
+          {isSuperAdmin && <>
             <Link to="/admin/teams" className="text-gray-400 hover:text-white">Teams</Link>
-            {role === 'super_admin' && <Link to="/admin/users" className="text-gray-400 hover:text-white">Users</Link>}
+            <Link to="/admin/users" className="text-gray-400 hover:text-white">Users</Link>
           </>}
           <button onClick={logout} className="text-gray-500 hover:text-white">Logout</button>
         </div>

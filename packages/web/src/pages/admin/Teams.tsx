@@ -84,7 +84,7 @@ export default function AdminTeams() {
           </thead>
           <tbody className="divide-y divide-gray-800">
             {teams.map(t => (
-              <tr key={t.id} className="bg-gray-900 hover:bg-gray-850">
+              <tr key={t.id} className="bg-gray-900 hover:bg-gray-800">
                 <td className="px-4 py-3 text-white font-medium">{t.name}</td>
                 <td className="px-4 py-3 text-gray-400">{t.displayName ?? '—'}</td>
                 <td className="px-4 py-3">

@@ -24,15 +24,20 @@ export default function TeamGrants() {
   async function load() {
     if (!id) return
     try {
-      const [gRes, tRes, sRes] = await Promise.all([
+      const [gRes, sRes] = await Promise.all([
         api.admin.grants.list(id),
-        api.admin.teams.list(),
         api.catalog(),
       ])
       setOutgoing(gRes.outgoing)
       setIncoming(gRes.incoming)
-      setTeams(tRes.teams.filter(t => t.id !== id))
       setServices(sRes.services)
+      // teams.list() is super_admin-only; team_owner can still use this page without it
+      try {
+        const tRes = await api.admin.teams.list()
+        setTeams(tRes.teams.filter(t => t.id !== id))
+      } catch {
+        // not a super_admin — leave teams list empty; grantee team dropdown won't populate
+      }
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -104,7 +109,7 @@ export default function TeamGrants() {
             <select value={granteeType} onChange={e => setGranteeType(e.target.value as 'team' | 'user')}
               className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white">
               <option value="team">Team</option>
-              <option value="user">User (email)</option>
+              <option value="user">User ID</option>
             </select>
 
             {granteeType === 'team'
