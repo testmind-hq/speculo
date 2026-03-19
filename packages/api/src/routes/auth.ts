@@ -85,7 +85,7 @@ authRouter.openapi(createRoute({
 }), async (c) => {
   const { email, password } = c.req.valid('json')
   const user = await db.query.users.findFirst({ where: eq(users.email, email) })
-  if (!user) return c.json({ error: 'Invalid credentials' }, 401 as const)
+  if (!user || !user.isActive) return c.json({ error: 'Invalid credentials' }, 401 as const)
   const valid = await bcrypt.compare(password, user.passwordHash)
   if (!valid) return c.json({ error: 'Invalid credentials' }, 401 as const)
   const token = await sign(

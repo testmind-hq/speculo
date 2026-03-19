@@ -266,6 +266,34 @@ describe('DELETE /api/admin/teams/:id/members/:userId', () => {
 
 // ── Cross-team Grants ─────────────────────────────────────────────────────────
 
+describe('GET /api/admin/teams/:id/grants', () => {
+  it('returns 403 for guest', async () => {
+    authState.userRole = 'guest'
+    const res = await app.request('/api/admin/teams/team-1/grants')
+    expect(res.status).toBe(403)
+  })
+
+  it('returns 403 when team_owner is not owner of the target team', async () => {
+    authState.userRole = 'team_owner'
+    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce(undefined)
+    const res = await app.request('/api/admin/teams/team-other/grants')
+    expect(res.status).toBe(403)
+  })
+
+  it('allows team_owner who owns the team to list grants', async () => {
+    authState.userRole = 'team_owner'
+    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce({ role: 'owner' } as any)
+    vi.mocked(db.select)
+      .mockReturnValueOnce({ from: vi.fn(() => chain([])) } as any) // outgoing
+      .mockReturnValueOnce({ from: vi.fn(() => chain([])) } as any) // incoming
+    const res = await app.request('/api/admin/teams/team-1/grants')
+    expect(res.status).toBe(200)
+    const body = await res.json() as any
+    expect(Array.isArray(body.outgoing)).toBe(true)
+    expect(Array.isArray(body.incoming)).toBe(true)
+  })
+})
+
 describe('POST /api/admin/teams/:id/grants', () => {
   it('returns 400 without a grantee', async () => {
     const res = await app.request('/api/admin/teams/team-1/grants', {

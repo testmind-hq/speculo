@@ -89,6 +89,17 @@ describe('POST /auth/login', () => {
     expect(res.status).toBe(400)
   })
 
+  it('returns 401 for disabled user', async () => {
+    const { db } = await import('../db/index.js')
+    vi.mocked(db.query.users.findFirst).mockResolvedValueOnce({ id: 'user-1', email: 'admin@example.com', passwordHash: 'hashed', role: 'super_admin', isActive: false } as any)
+    const res = await app.request('/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: 'admin@example.com', password: 'correct-pass' }),
+    })
+    expect(res.status).toBe(401)
+  })
+
   it('returns 401 for unknown email', async () => {
     const { db } = await import('../db/index.js')
     vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(undefined)

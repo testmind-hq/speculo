@@ -325,6 +325,7 @@ adminRouter.openapi(createRoute({
 }), async (c) => {
   if (!isTeamOwnerOrAdmin(c.get('userRole'))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
+  if (!isSuperAdmin(c) && !(await callerOwnsTeam(c.get('userId'), id))) return c.json({ error: 'Forbidden' }, 403 as const)
 
   const grantCols = {
     id: crossTeamGrants.id,
