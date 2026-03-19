@@ -84,6 +84,9 @@ export const api = {
 
   catalog: () => request<{ services: Service[] }>('/api/catalog'),
 
+  deleteService: (id: string) =>
+    request<{ ok: boolean }>(`/api/catalog/${id}`, { method: 'DELETE' }),
+
   upload: (formData: FormData) =>
     fetch('/api/upload', { method: 'POST', headers: authHeaders(), body: formData })
       .then(r => r.json()),

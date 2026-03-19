@@ -7,6 +7,7 @@ import { jwtAuth } from '../middleware/jwtAuth.js'
 export const catalogRouter = new OpenAPIHono()
 
 catalogRouter.use('/api/catalog', jwtAuth)
+catalogRouter.use('/api/catalog/:serviceId', jwtAuth)
 
 const BranchSchema = z.object({
   branch: z.string(),
@@ -121,4 +122,28 @@ catalogRouter.openapi(createRoute({
   }
 
   return c.json({ services: [...map.values()] }, 200 as const)
+})
+
+catalogRouter.openapi(createRoute({
+  method: 'delete',
+  path: '/api/catalog/:serviceId',
+  operationId: 'deleteService',
+  tags: ['Catalog'],
+  summary: 'Delete a service and all its specs (super_admin only)',
+  security: [{ bearerAuth: [] }],
+  request: { params: z.object({ serviceId: z.string().uuid() }) },
+  responses: {
+    200: { content: { 'application/json': { schema: z.object({ ok: z.boolean() }) } }, description: 'Deleted' },
+    403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
+    404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Not found' },
+  },
+}), async (c) => {
+  if (c.get('userRole') !== 'super_admin') {
+    return c.json({ error: 'Forbidden' }, 403 as const)
+  }
+  const { serviceId } = c.req.valid('param')
+  const existing = await db.query.services.findFirst({ where: eq(services.id, serviceId) })
+  if (!existing) return c.json({ error: 'Service not found' }, 404 as const)
+  await db.delete(services).where(eq(services.id, serviceId))
+  return c.json({ ok: true }, 200 as const)
 })
