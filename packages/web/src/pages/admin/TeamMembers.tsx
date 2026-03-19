@@ -1,26 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, type TeamMember, type User } from '../../lib/api.js'
+import { api, type TeamMember } from '../../lib/api.js'
 
 export default function TeamMembers() {
   const { id } = useParams<{ id: string }>()
   const [members, setMembers] = useState<TeamMember[]>([])
-  const [allUsers, setAllUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [selectedUser, setSelectedUser] = useState('')
+  const [userId, setUserId] = useState('')
   const [selectedRole, setSelectedRole] = useState<'owner' | 'member'>('member')
   const [adding, setAdding] = useState(false)
 
   async function load() {
     if (!id) return
     try {
-      const [mRes, uRes] = await Promise.all([
-        api.admin.members.list(id),
-        api.admin.users.list(),
-      ])
+      const mRes = await api.admin.members.list(id)
       setMembers(mRes.members)
-      setAllUsers(uRes.users)
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -30,16 +25,13 @@ export default function TeamMembers() {
 
   useEffect(() => { load() }, [id])
 
-  const memberUserIds = new Set(members.map(m => m.userId))
-  const nonMembers = allUsers.filter(u => !memberUserIds.has(u.id))
-
   async function addMember(e: React.FormEvent) {
     e.preventDefault()
-    if (!id || !selectedUser) return
+    if (!id || !userId.trim()) return
     setAdding(true)
     try {
-      await api.admin.members.add(id, selectedUser, selectedRole)
-      setSelectedUser('')
+      await api.admin.members.add(id, userId.trim(), selectedRole)
+      setUserId('')
       await load()
     } catch (e: any) {
       setError(e.message)
@@ -48,21 +40,21 @@ export default function TeamMembers() {
     }
   }
 
-  async function updateRole(userId: string, role: 'owner' | 'member') {
+  async function updateRole(memberId: string, role: 'owner' | 'member') {
     if (!id) return
     try {
-      await api.admin.members.updateRole(id, userId, role)
-      setMembers(ms => ms.map(m => m.userId === userId ? { ...m, role } : m))
+      await api.admin.members.updateRole(id, memberId, role)
+      setMembers(ms => ms.map(m => m.userId === memberId ? { ...m, role } : m))
     } catch (e: any) {
       setError(e.message)
     }
   }
 
-  async function removeMember(userId: string) {
+  async function removeMember(memberId: string) {
     if (!id || !confirm('Remove this member?')) return
     try {
-      await api.admin.members.remove(id, userId)
-      setMembers(ms => ms.filter(m => m.userId !== userId))
+      await api.admin.members.remove(id, memberId)
+      setMembers(ms => ms.filter(m => m.userId !== memberId))
     } catch (e: any) {
       setError(e.message)
     }
@@ -79,33 +71,30 @@ export default function TeamMembers() {
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
-      {nonMembers.length > 0 && (
-        <form onSubmit={addMember} className="flex gap-2 items-center">
-          <select
-            value={selectedUser}
-            onChange={e => setSelectedUser(e.target.value)}
-            className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white"
-          >
-            <option value="">Select user…</option>
-            {nonMembers.map(u => <option key={u.id} value={u.id}>{u.email}</option>)}
-          </select>
-          <select
-            value={selectedRole}
-            onChange={e => setSelectedRole(e.target.value as 'owner' | 'member')}
-            className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white"
-          >
-            <option value="member">Member</option>
-            <option value="owner">Owner</option>
-          </select>
-          <button
-            type="submit"
-            disabled={adding || !selectedUser}
-            className="rounded bg-purple-600 px-3 py-1.5 text-sm hover:bg-purple-700 disabled:opacity-50"
-          >
-            + Add
-          </button>
-        </form>
-      )}
+      <form onSubmit={addMember} className="flex gap-2 items-center">
+        <input
+          type="text"
+          placeholder="User ID"
+          value={userId}
+          onChange={e => setUserId(e.target.value)}
+          className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white placeholder-gray-500 w-72"
+        />
+        <select
+          value={selectedRole}
+          onChange={e => setSelectedRole(e.target.value as 'owner' | 'member')}
+          className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white"
+        >
+          <option value="member">Member</option>
+          <option value="owner">Owner</option>
+        </select>
+        <button
+          type="submit"
+          disabled={adding || !userId.trim()}
+          className="rounded bg-purple-600 px-3 py-1.5 text-sm hover:bg-purple-700 disabled:opacity-50"
+        >
+          + Add
+        </button>
+      </form>
 
       <div className="rounded-xl border border-gray-800 overflow-hidden">
         <table className="w-full text-sm">

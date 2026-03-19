@@ -8,6 +8,7 @@ export default function TeamServices() {
   const [allServices, setAllServices] = useState<Service[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const isSuperAdmin = localStorage.getItem('speculo_role') === 'super_admin'
 
   async function load() {
     if (!id) return
@@ -61,7 +62,7 @@ export default function TeamServices() {
 
       {error && <p className="text-red-400 text-sm">{error}</p>}
 
-      {unassigned.length > 0 && (
+      {isSuperAdmin && unassigned.length > 0 && (
         <div>
           <p className="text-sm text-gray-400 mb-2">Assign a service to this team:</p>
           <div className="flex flex-wrap gap-2">
@@ -90,9 +91,11 @@ export default function TeamServices() {
             {teamServices.map(s => (
               <tr key={s.id} className="bg-gray-900">
                 <td className="px-4 py-3 text-white">{s.displayName ?? s.name}</td>
-                <td className="px-4 py-3">
-                  <button onClick={() => removeService(s.id)} className="text-red-500 hover:text-red-400 text-xs">Remove</button>
-                </td>
+                {isSuperAdmin && (
+                  <td className="px-4 py-3">
+                    <button onClick={() => removeService(s.id)} className="text-red-500 hover:text-red-400 text-xs">Remove</button>
+                  </td>
+                )}
               </tr>
             ))}
             {teamServices.length === 0 && (
