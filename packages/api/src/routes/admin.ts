@@ -21,6 +21,14 @@ function isTeamOwnerOrAdmin(role: string): boolean {
   return role === 'super_admin' || role === 'team_owner'
 }
 
+/** Returns true if the given user is an owner of the specified team */
+async function callerOwnsTeam(userId: string, teamId: string): Promise<boolean> {
+  const membership = await db.query.teamMembers.findFirst({
+    where: and(eq(teamMembers.teamId, teamId), eq(teamMembers.userId, userId)),
+  })
+  return membership?.role === 'owner'
+}
+
 // ── Teams ─────────────────────────────────────────────────────────────────────
 
 const TeamSchema = z.object({
@@ -148,6 +156,7 @@ adminRouter.openapi(createRoute({
 }), async (c) => {
   if (!isTeamOwnerOrAdmin(c.get('userRole'))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
+  if (!isSuperAdmin(c) && !(await callerOwnsTeam(c.get('userId'), id))) return c.json({ error: 'Forbidden' }, 403 as const)
   const rows = await db
     .select({ id: teamMembers.id, userId: teamMembers.userId, email: users.email, role: teamMembers.role, joinedAt: teamMembers.joinedAt })
     .from(teamMembers)
@@ -176,6 +185,7 @@ adminRouter.openapi(createRoute({
 }), async (c) => {
   if (!isTeamOwnerOrAdmin(c.get('userRole'))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
+  if (!isSuperAdmin(c) && !(await callerOwnsTeam(c.get('userId'), id))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { userId, role } = c.req.valid('json')
   const existing = await db.query.teamMembers.findFirst({
     where: and(eq(teamMembers.teamId, id), eq(teamMembers.userId, userId)),
@@ -204,6 +214,7 @@ adminRouter.openapi(createRoute({
 }), async (c) => {
   if (!isTeamOwnerOrAdmin(c.get('userRole'))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id, userId } = c.req.valid('param')
+  if (!isSuperAdmin(c) && !(await callerOwnsTeam(c.get('userId'), id))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { role } = c.req.valid('json')
   const result = await db.update(teamMembers).set({ role })
     .where(and(eq(teamMembers.teamId, id), eq(teamMembers.userId, userId)))
@@ -227,6 +238,7 @@ adminRouter.openapi(createRoute({
 }), async (c) => {
   if (!isTeamOwnerOrAdmin(c.get('userRole'))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id, userId } = c.req.valid('param')
+  if (!isSuperAdmin(c) && !(await callerOwnsTeam(c.get('userId'), id))) return c.json({ error: 'Forbidden' }, 403 as const)
   await db.delete(teamMembers).where(and(eq(teamMembers.teamId, id), eq(teamMembers.userId, userId)))
   return c.json({ ok: true }, 200 as const)
 })
@@ -251,6 +263,7 @@ adminRouter.openapi(createRoute({
 }), async (c) => {
   if (!isTeamOwnerOrAdmin(c.get('userRole'))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
+  if (!isSuperAdmin(c) && !(await callerOwnsTeam(c.get('userId'), id))) return c.json({ error: 'Forbidden' }, 403 as const)
   const rows = await db
     .select({ id: services.id, name: services.name, displayName: services.displayName })
     .from(services)
@@ -386,9 +399,14 @@ adminRouter.openapi(createRoute({
 }), async (c) => {
   if (!isTeamOwnerOrAdmin(c.get('userRole'))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
+  if (!isSuperAdmin(c) && !(await callerOwnsTeam(c.get('userId'), id))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { serviceId, branches, granteeTeamId, granteeUserId, expiresAt } = c.req.valid('json')
   if (!granteeTeamId && !granteeUserId) return c.json({ error: 'Must specify granteeTeamId or granteeUserId' }, 400 as const)
   if (granteeTeamId && granteeUserId) return c.json({ error: 'Cannot specify both granteeTeamId and granteeUserId' }, 400 as const)
+  // Verify the service belongs to the ownerTeam (super_admin may bypass)
+  const svc = await db.query.services.findFirst({ where: eq(services.id, serviceId), columns: { teamId: true } })
+  if (!svc) return c.json({ error: 'Service not found' }, 400 as const)
+  if (!isSuperAdmin(c) && svc.teamId !== id) return c.json({ error: 'Service does not belong to this team' }, 403 as const)
   const grantedBy = c.get('userId')
   const [grant] = await db.insert(crossTeamGrants).values({
     ownerTeamId: id,

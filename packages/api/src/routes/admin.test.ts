@@ -62,6 +62,7 @@ vi.mock('../db/index.js', () => ({
       teamMembers:     { findFirst: vi.fn() },
       crossTeamGrants: { findFirst: vi.fn() },
       users:           { findFirst: vi.fn() },
+      services:        { findFirst: vi.fn() },
     },
   },
 }))
@@ -80,6 +81,7 @@ beforeEach(() => {
   vi.mocked(db.query.teamMembers.findFirst).mockResolvedValue(undefined)
   vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValue(mockGrant as any)
   vi.mocked(db.query.users.findFirst).mockResolvedValue(mockUser as any)
+  vi.mocked(db.query.services.findFirst).mockResolvedValue({ teamId: 'team-1' } as any)
   vi.mocked(db.select).mockReturnValue({ from: vi.fn(() => chain([])) } as any)
 })
 
@@ -171,8 +173,10 @@ describe('GET /api/admin/teams/:id/members', () => {
     expect(res.status).toBe(403)
   })
 
-  it('allows team_owner to list members', async () => {
+  it('allows team_owner to list members of their own team', async () => {
     authState.userRole = 'team_owner'
+    // callerOwnsTeam check: user is owner of team-1
+    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce({ role: 'owner' } as any)
     vi.mocked(db.select).mockReturnValueOnce({
       from: vi.fn(() => chain([mockMember])),
     } as any)
@@ -180,6 +184,14 @@ describe('GET /api/admin/teams/:id/members', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as any
     expect(Array.isArray(body.members)).toBe(true)
+  })
+
+  it('returns 403 when team_owner tries to access another team', async () => {
+    authState.userRole = 'team_owner'
+    // callerOwnsTeam check: user is NOT owner of team-other
+    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce(undefined)
+    const res = await app.request('/api/admin/teams/team-other/members')
+    expect(res.status).toBe(403)
   })
 })
 
@@ -274,6 +286,8 @@ describe('POST /api/admin/teams/:id/grants', () => {
   })
 
   it('creates a team-level grant', async () => {
+    // service ownership check: service belongs to team-1
+    vi.mocked(db.query.services.findFirst).mockResolvedValueOnce({ teamId: 'team-1' } as any)
     vi.mocked(db.insert).mockReturnValueOnce({
       values: vi.fn(() => insertChain([{ id: 'grant-new' }])),
     } as any)
@@ -285,6 +299,20 @@ describe('POST /api/admin/teams/:id/grants', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as any
     expect(body.id).toBeTruthy()
+  })
+
+  it('returns 403 when team_owner tries to grant a service from another team', async () => {
+    authState.userRole = 'team_owner'
+    // callerOwnsTeam: user owns team-1
+    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce({ role: 'owner' } as any)
+    // service belongs to team-2, not team-1
+    vi.mocked(db.query.services.findFirst).mockResolvedValueOnce({ teamId: 'team-2' } as any)
+    const res = await app.request('/api/admin/teams/team-1/grants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ serviceId: 'svc-other', granteeTeamId: 'team-3' }),
+    })
+    expect(res.status).toBe(403)
   })
 })
 

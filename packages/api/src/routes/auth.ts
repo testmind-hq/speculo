@@ -52,9 +52,11 @@ authRouter.openapi(createRoute({
   },
   responses: {
     200: { content: { 'application/json': { schema: z.object({ userId: z.string() }) } }, description: 'User created' },
+    403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
     409: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Email already registered' },
   },
 }), async (c) => {
+  if (c.get('userRole') !== 'super_admin') return c.json({ error: 'Forbidden' }, 403 as const)
   const { email, password } = c.req.valid('json')
   const existing = await db.query.users.findFirst({ where: eq(users.email, email) })
   if (existing) return c.json({ error: 'Email already registered' }, 409 as const)
