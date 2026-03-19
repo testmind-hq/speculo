@@ -33,6 +33,9 @@ async function validateMcpToken(authHeader: string | undefined): Promise<boolean
 const sessions = new Map<string, WebStandardStreamableHTTPServerTransport>()
 
 mcpRouter.all('/mcp', async (c) => {
+  // CORS preflight — let the cors middleware handle it without auth
+  if (c.req.method === 'OPTIONS') return new Response(null, { status: 204 })
+
   const valid = await validateMcpToken(c.req.header('Authorization'))
   if (!valid) return c.json({ error: 'Unauthorized' }, 401)
 
