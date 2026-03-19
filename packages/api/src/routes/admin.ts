@@ -186,6 +186,8 @@ adminRouter.openapi(createRoute({
   const { id } = c.req.valid('param')
   if (!isSuperAdmin(c) && !(await callerOwnsTeam(c.get('userId'), id))) return c.json({ error: 'Forbidden' }, 403 as const)
   const { userId, role } = c.req.valid('json')
+  const userExists = await db.query.users.findFirst({ where: eq(users.id, userId), columns: { id: true } })
+  if (!userExists) return c.json({ error: 'User not found' }, 400 as const)
   const existing = await db.query.teamMembers.findFirst({
     where: and(eq(teamMembers.teamId, id), eq(teamMembers.userId, userId)),
   })
@@ -290,6 +292,10 @@ adminRouter.openapi(createRoute({
   if (!isSuperAdmin(c)) return c.json({ error: 'Forbidden' }, 403 as const)
   const { serviceId } = c.req.valid('param')
   const { teamId } = c.req.valid('json')
+  if (teamId !== null) {
+    const teamExists = await db.query.teams.findFirst({ where: eq(teams.id, teamId), columns: { id: true } })
+    if (!teamExists) return c.json({ error: 'Team not found' }, 404 as const)
+  }
   await db.update(services).set({ teamId }).where(eq(services.id, serviceId))
   return c.json({ ok: true }, 200 as const)
 })

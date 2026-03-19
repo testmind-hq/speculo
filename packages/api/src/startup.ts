@@ -42,6 +42,7 @@ async function bootstrapAdminUser() {
 
   const [admin] = await db.insert(users)
     .values({ email: 'admin@example.com', passwordHash, role: 'super_admin' })
+    .onConflictDoNothing()
     .returning({ id: users.id })
 
   // Assign admin as owner of the default team

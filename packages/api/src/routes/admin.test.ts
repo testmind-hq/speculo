@@ -206,6 +206,16 @@ describe('POST /api/admin/teams/:id/members', () => {
     expect(res.status).toBe(403)
   })
 
+  it('returns 400 when userId does not exist', async () => {
+    vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(undefined)
+    const res = await app.request('/api/admin/teams/team-1/members', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: 'no-such-user' }),
+    })
+    expect(res.status).toBe(400)
+  })
+
   it('returns 409 when already a member', async () => {
     vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce({ id: 'mem-1' } as any)
     const res = await app.request('/api/admin/teams/team-1/members', {

@@ -111,6 +111,7 @@ uploadRouter.openapi(createRoute({
   const defaultTeamId = await getDefaultTeamId()
   await db.insert(services).values({ name: service!, teamId: defaultTeamId }).onConflictDoNothing()
   const [svc] = await db.select({ id: services.id }).from(services).where(eq(services.name, service!))
+  if (!svc) return c.json({ error: 'Service not found after upsert' }, 400 as const)
 
   // Dedup: if the current latest has the same hash, skip the write entirely
   const [current] = await db
@@ -129,7 +130,7 @@ uploadRouter.openapi(createRoute({
     }, 200 as const)
   }
 
-  await db.transaction(async (tx) => {
+  try { await db.transaction(async (tx) => {
     // Unset previous latest
     await tx.update(specVersions)
       .set({ isLatest: false })
@@ -167,7 +168,12 @@ uploadRouter.openapi(createRoute({
         endpointRows.map(r => ({ ...r, specId: newSpec.id }))
       )
     }
-  })
+  }) } catch (err: unknown) {
+    // Unique-violation (23505) can occur when two uploads race on the same service+branch
+    const pg = err as { code?: string }
+    if (pg.code === '23505') return c.json({ error: 'Concurrent upload conflict — retry' }, 409 as const)
+    throw err
+  }
 
   // Invalidate cache after commit
   specCache.delete(`${service}:${branch}`)
