@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../lib/api.js'
 
-type Service = { id: string; name: string; displayName: string | null; branches: { branch: string; endpointCount: number; uploadedAt: string }[] }
+type Service = { id: string; name: string; displayName: string | null; teamId: string | null; teamName: string | null; branches: { branch: string; endpointCount: number; uploadedAt: string }[] }
 
 export default function Catalog() {
   const [services, setServices] = useState<Service[]>([])
@@ -47,7 +47,14 @@ export default function Catalog() {
         <div key={svc.id} className="rounded-xl border border-gray-800 bg-gray-900 p-5">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <h2 className="font-medium text-white">{svc.displayName ?? svc.name}</h2>
+              <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                <h2 className="font-medium text-white">{svc.displayName ?? svc.name}</h2>
+                {svc.teamName && (
+                  <span className="inline-flex items-center rounded-full bg-purple-900/40 border border-purple-700/50 px-2 py-0.5 text-xs text-purple-300">
+                    {svc.teamName}
+                  </span>
+                )}
+              </div>
               <p className="text-sm text-gray-500 mb-3">{svc.name}</p>
             </div>
             {isAdmin && (
