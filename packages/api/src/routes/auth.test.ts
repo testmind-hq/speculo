@@ -91,7 +91,7 @@ describe('POST /auth/login', () => {
 
   it('returns 401 for unknown email', async () => {
     const { db } = await import('../db/index.js')
-    vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(null)
+    vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(undefined)
     const res = await app.request('/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

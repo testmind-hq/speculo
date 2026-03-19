@@ -77,7 +77,7 @@ beforeEach(() => {
   authState.userId   = 'user-1'
   authState.userRole = 'super_admin'
   vi.mocked(db.query.teams.findFirst).mockResolvedValue(mockTeam as any)
-  vi.mocked(db.query.teamMembers.findFirst).mockResolvedValue(null)
+  vi.mocked(db.query.teamMembers.findFirst).mockResolvedValue(undefined)
   vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValue(mockGrant as any)
   vi.mocked(db.query.users.findFirst).mockResolvedValue(mockUser as any)
   vi.mocked(db.select).mockReturnValue({ from: vi.fn(() => chain([])) } as any)
@@ -123,7 +123,7 @@ describe('POST /api/admin/teams', () => {
   })
 
   it('creates team for super_admin', async () => {
-    vi.mocked(db.query.teams.findFirst).mockResolvedValueOnce(null)
+    vi.mocked(db.query.teams.findFirst).mockResolvedValueOnce(undefined)
     const res = await app.request('/api/admin/teams', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -143,7 +143,7 @@ describe('DELETE /api/admin/teams/:id', () => {
   })
 
   it('returns 404 when team not found', async () => {
-    vi.mocked(db.query.teams.findFirst).mockResolvedValueOnce(null)
+    vi.mocked(db.query.teams.findFirst).mockResolvedValueOnce(undefined)
     const res = await app.request('/api/admin/teams/no-such', { method: 'DELETE' })
     expect(res.status).toBe(404)
   })
@@ -290,7 +290,7 @@ describe('POST /api/admin/teams/:id/grants', () => {
 
 describe('DELETE /api/admin/grants/:id', () => {
   it('returns 404 when grant not found', async () => {
-    vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValueOnce(null)
+    vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValueOnce(undefined)
     const res = await app.request('/api/admin/grants/no-grant', { method: 'DELETE' })
     expect(res.status).toBe(404)
   })
@@ -301,7 +301,7 @@ describe('DELETE /api/admin/grants/:id', () => {
       id: 'grant-1', ownerTeamId: 'team-other',
     } as any)
     // User is NOT a member of team-other
-    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce(null)
+    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce(undefined)
     const res = await app.request('/api/admin/grants/grant-1', { method: 'DELETE' })
     expect(res.status).toBe(403)
   })
@@ -410,7 +410,7 @@ describe('GET /api/me', () => {
   })
 
   it('returns 401 when user not found in DB', async () => {
-    vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(null)
+    vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(undefined)
     const res = await app.request('/api/me')
     expect(res.status).toBe(401)
   })

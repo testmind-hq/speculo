@@ -28,8 +28,8 @@ const mockService = { id: 'svc-1', teamId: 'team-a' }
 beforeEach(() => {
   vi.mocked(db.query.users.findFirst).mockResolvedValue({ role: 'team_member', isActive: true } as any)
   vi.mocked(db.query.services.findFirst).mockResolvedValue(mockService as any)
-  vi.mocked(db.query.teamMembers.findFirst).mockResolvedValue(null)
-  vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValue(null)
+  vi.mocked(db.query.teamMembers.findFirst).mockResolvedValue(undefined)
+  vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValue(undefined)
   vi.mocked(db.select).mockReturnValue({
     from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
   } as any)
@@ -43,13 +43,13 @@ describe('canAccessBranch', () => {
   })
 
   it('returns false when user is not found or inactive', async () => {
-    vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(null)
+    vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(undefined)
     const result = await canAccessBranch('ghost', 'my-service', 'main')
     expect(result).toBe(false)
   })
 
   it('returns false when service does not exist', async () => {
-    vi.mocked(db.query.services.findFirst).mockResolvedValueOnce(null)
+    vi.mocked(db.query.services.findFirst).mockResolvedValueOnce(undefined)
     const result = await canAccessBranch('user-1', 'no-such-service', 'main')
     expect(result).toBe(false)
   })
