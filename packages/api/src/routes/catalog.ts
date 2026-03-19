@@ -144,6 +144,8 @@ catalogRouter.openapi(createRoute({
   const { serviceId } = c.req.valid('param')
   const existing = await db.query.services.findFirst({ where: eq(services.id, serviceId) })
   if (!existing) return c.json({ error: 'Service not found' }, 404 as const)
+  // Delete spec_versions first (endpoint_index cascades from spec_versions)
+  await db.delete(specVersions).where(eq(specVersions.serviceId, serviceId))
   await db.delete(services).where(eq(services.id, serviceId))
   return c.json({ ok: true }, 200 as const)
 })
