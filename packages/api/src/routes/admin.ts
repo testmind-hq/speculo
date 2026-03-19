@@ -178,6 +178,7 @@ adminRouter.openapi(createRoute({
   },
   responses: {
     200: { content: { 'application/json': { schema: z.object({ ok: z.boolean() }) } }, description: 'Added' },
+    400: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'User not found' },
     403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
     409: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Already member' },
   },
@@ -287,6 +288,7 @@ adminRouter.openapi(createRoute({
   responses: {
     200: { content: { 'application/json': { schema: z.object({ ok: z.boolean() }) } }, description: 'Assigned' },
     403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
+    404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Team not found' },
   },
 }), async (c) => {
   if (!isSuperAdmin(c)) return c.json({ error: 'Forbidden' }, 403 as const)

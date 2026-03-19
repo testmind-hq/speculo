@@ -60,6 +60,7 @@ uploadRouter.openapi(createRoute({
       description: 'Spec uploaded and indexed',
     },
     400: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Invalid spec or missing fields' },
+    409: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Concurrent upload conflict' },
   },
 }), async (c) => {
   let service: string | undefined
