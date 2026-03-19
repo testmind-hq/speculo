@@ -334,12 +334,21 @@ describe('DELETE /api/admin/grants/:id', () => {
     expect(res.status).toBe(403)
   })
 
-  it('allows team_owner who owns the grant to delete it', async () => {
+  it('returns 403 when user is a team_member (non-owner) in the owning team', async () => {
+    authState.userRole = 'team_owner'
+    vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValueOnce({ id: 'grant-1', ownerTeamId: 'team-1' } as any)
+    // User is a member but NOT an owner of team-1
+    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce(undefined)
+    const res = await app.request('/api/admin/grants/grant-1', { method: 'DELETE' })
+    expect(res.status).toBe(403)
+  })
+
+  it('allows team owner (role=owner) to delete their grant', async () => {
     authState.userRole = 'team_owner'
     // Grant owned by team-1
     vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValueOnce({ id: 'grant-1', ownerTeamId: 'team-1' } as any)
-    // User IS a member of team-1
-    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce({ id: 'mem-1' } as any)
+    // User IS an owner of team-1
+    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce({ id: 'mem-1', role: 'owner' } as any)
     const res = await app.request('/api/admin/grants/grant-1', { method: 'DELETE' })
     expect(res.status).toBe(200)
   })

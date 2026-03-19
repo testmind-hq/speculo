@@ -36,6 +36,13 @@
       "when": 1742000002000,
       "tag": "0004_spec_versions_unique_idx",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1742000003000,
+      "tag": "0005_backfill_service_team",
+      "breakpoints": true
     }
   ]
 }

@@ -448,7 +448,7 @@ adminRouter.openapi(createRoute({
   if (c.get('userRole') !== 'super_admin') {
     const userId = c.get('userId')
     const membership = await db.query.teamMembers.findFirst({
-      where: and(eq(teamMembers.teamId, grant.ownerTeamId), eq(teamMembers.userId, userId)),
+      where: and(eq(teamMembers.teamId, grant.ownerTeamId), eq(teamMembers.userId, userId), eq(teamMembers.role, 'owner')),
     })
     if (!membership) return c.json({ error: 'Forbidden' }, 403 as const)
   }
