@@ -9,6 +9,7 @@ import { jwtAuth } from '../middleware/jwtAuth.js'
 import { env } from '../env.js'
 import { randomBytes } from 'node:crypto'
 import { logEvent } from '../services/audit.js'
+import { emitWebhookEvent } from '../services/webhooks.js'
 
 export const authRouter = new OpenAPIHono()
 
@@ -171,6 +172,11 @@ authRouter.openapi(createRoute({
     .values({ userId, name, tokenHash, prefix, scope })
     .returning({ id: mcpTokens.id, name: mcpTokens.name, scope: mcpTokens.scope, prefix: mcpTokens.prefix, createdAt: mcpTokens.createdAt })
   void logEvent({ userId: c.get('userId'), action: 'token_created', targetId: newToken.id, targetName: name })
+  void emitWebhookEvent({
+    event: 'token.created',
+    timestamp: new Date().toISOString(),
+    meta: { tokenName: name, scope },
+  }, [])
   return c.json({ ...newToken, token: rawToken }, 200 as const)
 })
 
@@ -195,5 +201,10 @@ authRouter.openapi(createRoute({
     .returning({ id: mcpTokens.id })
   if (!result.length) return c.json({ error: 'Token not found' }, 404 as const)
   void logEvent({ userId: c.get('userId'), action: 'token_revoked', targetId: id })
+  void emitWebhookEvent({
+    event: 'token.revoked',
+    timestamp: new Date().toISOString(),
+    meta: { tokenId: id },
+  }, [])
   return c.json({ ok: true }, 200 as const)
 })

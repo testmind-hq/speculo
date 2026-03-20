@@ -9,6 +9,7 @@ import { extractEndpoints } from '../services/indexBuilder.js'
 import { specCache } from '../services/cache.js'
 import { getDefaultTeamId } from '../services/permissions.js'
 import { logEvent } from '../services/audit.js'
+import { emitWebhookEvent } from '../services/webhooks.js'
 
 export const uploadRouter = new OpenAPIHono()
 
@@ -112,7 +113,7 @@ uploadRouter.openapi(createRoute({
   // Upsert service — assign to default team on first creation
   const defaultTeamId = await getDefaultTeamId()
   await db.insert(services).values({ name: service!, teamId: defaultTeamId }).onConflictDoNothing()
-  const [svc] = await db.select({ id: services.id }).from(services).where(eq(services.name, service!))
+  const [svc] = await db.select({ id: services.id, teamId: services.teamId }).from(services).where(eq(services.name, service!))
   if (!svc) return c.json({ error: 'Service not found after upsert' }, 400 as const)
 
   // Dedup: if the current latest has the same hash, skip the write entirely
@@ -198,6 +199,12 @@ uploadRouter.openapi(createRoute({
     targetName: service,
     meta: { branch, commitSha: commitSha ?? null, endpointCount: endpointRows.length },
   })
+  void emitWebhookEvent({
+    event: current ? 'spec.updated' : 'spec.uploaded',
+    service,
+    timestamp: new Date().toISOString(),
+    meta: { commitSha: commitSha ?? null, endpointCount: endpointRows.length },
+  }, svc.teamId ? [svc.teamId] : [])
 
   return c.json({
     service,

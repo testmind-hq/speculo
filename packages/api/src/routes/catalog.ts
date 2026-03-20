@@ -4,6 +4,7 @@ import { db } from '../db/index.js'
 import { services, specVersions, teams, teamMembers, crossTeamGrants } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
 import { logEvent } from '../services/audit.js'
+import { emitWebhookEvent } from '../services/webhooks.js'
 
 export const catalogRouter = new OpenAPIHono()
 
@@ -161,5 +162,10 @@ catalogRouter.openapi(createRoute({
     targetId: serviceId,
     targetName: existing.name,
   })
+  void emitWebhookEvent({
+    event: 'service.deleted',
+    service: existing.name,
+    timestamp: new Date().toISOString(),
+  }, existing.teamId ? [existing.teamId] : [])
   return c.json({ ok: true }, 200 as const)
 })
