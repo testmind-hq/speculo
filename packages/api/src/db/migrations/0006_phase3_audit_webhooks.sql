@@ -1,4 +1,3 @@
---> statement-breakpoint
 CREATE TYPE "public"."audit_action" AS ENUM(
   'login', 'spec_uploaded', 'spec_updated', 'service_deleted',
   'grant_created', 'grant_revoked', 'token_created', 'token_revoked',
