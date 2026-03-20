@@ -12,12 +12,16 @@ const mockServiceRow = {
   uploadedAt: new Date(),
 }
 
-// The catalog query chain: select().from().leftJoin().innerJoin().orderBy()
+// The catalog query chain: select().from().leftJoin().innerJoin().$dynamic().where().orderBy()
+const dynamicChain: any = {
+  where: vi.fn(() => dynamicChain),
+  orderBy: vi.fn().mockResolvedValue([mockServiceRow]),
+}
 const catalogChain = {
   from: vi.fn(() => ({
     leftJoin: vi.fn(() => ({
       innerJoin: vi.fn(() => ({
-        orderBy: vi.fn().mockResolvedValue([mockServiceRow]),
+        $dynamic: vi.fn(() => dynamicChain),
       })),
     })),
   })),

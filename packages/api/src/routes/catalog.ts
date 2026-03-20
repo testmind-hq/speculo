@@ -79,7 +79,7 @@ catalogRouter.openapi(createRoute({
     ])
   }
 
-  const rows = await db
+  let query = db
     .select({
       id: services.id,
       name: services.name,
@@ -93,7 +93,17 @@ catalogRouter.openapi(createRoute({
     .from(services)
     .leftJoin(teams, eq(teams.id, services.teamId))
     .innerJoin(specVersions, sql`${specVersions.serviceId} = ${services.id} AND ${specVersions.isLatest} = true`)
-    .orderBy(services.name, specVersions.branch)
+    .$dynamic()
+
+  // Push the accessibility filter into SQL for non-super_admin users
+  if (accessibleServiceIds && accessibleServiceIds.size > 0) {
+    query = query.where(inArray(services.id, [...accessibleServiceIds]))
+  } else if (accessibleServiceIds && accessibleServiceIds.size === 0) {
+    // User has no accessible services at all — return empty
+    return c.json({ services: [] }, 200 as const)
+  }
+
+  const rows = await query.orderBy(services.name, specVersions.branch)
 
   const map = new Map<string, {
     id: string
@@ -105,9 +115,6 @@ catalogRouter.openapi(createRoute({
   }>()
 
   for (const row of rows) {
-    // Filter by accessible service IDs for non-super_admin users
-    if (accessibleServiceIds && !accessibleServiceIds.has(row.id)) continue
-
     if (!map.has(row.id)) {
       map.set(row.id, {
         id: row.id,
