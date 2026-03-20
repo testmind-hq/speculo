@@ -161,4 +161,33 @@ describe('POST /api/upload', () => {
     expect(body.service).toBe('order-service')
     expect(body.branch).toBe('feature/x')
   })
+
+  it('prunes old versions when 5 already exist', async () => {
+    // Override: 2nd db.select (dedup check) returns a current latest with a DIFFERENT hash
+    // so we proceed into the transaction (no early return).
+    vi.mocked(db.select)
+      .mockReset()
+      .mockReturnValueOnce({ from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ id: 'svc-1' }]) })) } as any)
+      .mockReturnValueOnce({ from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ id: 'old-spec', specHash: 'different-hash' }]) })) } as any)
+
+    // Return 5 versions from the pruning select — should trigger the prune delete
+    const fiveVersionIds = ['v1', 'v2', 'v3', 'v4', 'v5'].map(id => ({ id }))
+    txMock.select.mockReturnValueOnce(makeTxSelectChain(fiveVersionIds))
+
+    const form = new FormData()
+    form.append('service', 'my-service')
+    form.append('branch', 'main')
+    form.append('file', new Blob([JSON.stringify({ openapi: '3.1.0', info: { title: 'T', version: '1' }, paths: {} })], { type: 'application/json' }), 'openapi.json')
+
+    const res = await app.request('/api/upload', {
+      method: 'POST',
+      body: form,
+    })
+
+    expect(res.status).toBe(200)
+    // txMock.delete should have been called for:
+    //   (1) old endpoint_index rows (because current exists with a different hash)
+    //   (2) the prune delete (because keepIds.length === 5)
+    expect(txMock.delete).toHaveBeenCalledTimes(2)
+  })
 })
