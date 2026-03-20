@@ -8,6 +8,7 @@ import { users, mcpTokens } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
 import { env } from '../env.js'
 import { randomBytes } from 'node:crypto'
+import { logEvent } from '../services/audit.js'
 
 export const authRouter = new OpenAPIHono()
 
@@ -88,6 +89,7 @@ authRouter.openapi(createRoute({
   if (!user || !user.isActive) return c.json({ error: 'Invalid credentials' }, 401 as const)
   const valid = await bcrypt.compare(password, user.passwordHash)
   if (!valid) return c.json({ error: 'Invalid credentials' }, 401 as const)
+  void logEvent({ userId: user.id, action: 'login', targetName: user.email })
   const token = await sign(
     { userId: user.id, role: user.role, exp: Math.floor(Date.now() / 1000) + env.JWT_EXPIRY_DAYS * 86400 },
     env.JWT_SECRET
@@ -165,10 +167,11 @@ authRouter.openapi(createRoute({
   const rawToken = 'speculo_mcp_' + randomBytes(24).toString('base64url')
   const prefix = rawToken.slice(0, 24)
   const tokenHash = await bcrypt.hash(rawToken, 10)
-  const [token] = await db.insert(mcpTokens)
+  const [newToken] = await db.insert(mcpTokens)
     .values({ userId, name, tokenHash, prefix, scope })
     .returning({ id: mcpTokens.id, name: mcpTokens.name, scope: mcpTokens.scope, prefix: mcpTokens.prefix, createdAt: mcpTokens.createdAt })
-  return c.json({ ...token, token: rawToken }, 200 as const)
+  void logEvent({ userId: c.get('userId'), action: 'token_created', targetId: newToken.id, targetName: name })
+  return c.json({ ...newToken, token: rawToken }, 200 as const)
 })
 
 authRouter.openapi(createRoute({
@@ -191,5 +194,6 @@ authRouter.openapi(createRoute({
     .where(and(eq(mcpTokens.id, id), eq(mcpTokens.userId, userId)))
     .returning({ id: mcpTokens.id })
   if (!result.length) return c.json({ error: 'Token not found' }, 404 as const)
+  void logEvent({ userId: c.get('userId'), action: 'token_revoked', targetId: id })
   return c.json({ ok: true }, 200 as const)
 })

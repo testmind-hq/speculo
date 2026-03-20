@@ -8,6 +8,7 @@ import { normalizeSpec } from '../services/specProcessor.js'
 import { extractEndpoints } from '../services/indexBuilder.js'
 import { specCache } from '../services/cache.js'
 import { getDefaultTeamId } from '../services/permissions.js'
+import { logEvent } from '../services/audit.js'
 
 export const uploadRouter = new OpenAPIHono()
 
@@ -188,6 +189,15 @@ uploadRouter.openapi(createRoute({
 
   // Invalidate cache after commit
   specCache.delete(`${service}:${branch}`)
+
+  // Audit: distinguish first upload vs update
+  void logEvent({
+    userId: c.get('userId') ?? null,
+    action: current ? 'spec_updated' : 'spec_uploaded',
+    targetId: svc.id,
+    targetName: service,
+    meta: { branch, commitSha: commitSha ?? null, endpointCount: endpointRows.length },
+  })
 
   return c.json({
     service,

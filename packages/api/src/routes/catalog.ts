@@ -3,6 +3,7 @@ import { eq, sql, inArray, or, isNull, gt, and } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { services, specVersions, teams, teamMembers, crossTeamGrants } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
+import { logEvent } from '../services/audit.js'
 
 export const catalogRouter = new OpenAPIHono()
 
@@ -154,5 +155,11 @@ catalogRouter.openapi(createRoute({
   // Delete spec_versions first (endpoint_index cascades from spec_versions)
   await db.delete(specVersions).where(eq(specVersions.serviceId, serviceId))
   await db.delete(services).where(eq(services.id, serviceId))
+  void logEvent({
+    userId: c.get('userId'),
+    action: 'service_deleted',
+    targetId: serviceId,
+    targetName: existing.name,
+  })
   return c.json({ ok: true }, 200 as const)
 })
