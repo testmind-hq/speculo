@@ -44,9 +44,6 @@ vi.mock('../middleware/jwtAuth.js', () => ({
   }),
 }))
 
-process.env.DATABASE_URL = 'postgresql://x:x@localhost/x'
-process.env.JWT_SECRET = 'a'.repeat(32)
-
 const { auditRouter } = await import('./audit.js')
 const app = new Hono().route('/', auditRouter)
 

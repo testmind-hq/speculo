@@ -27,7 +27,7 @@ auditRouter.openapi(createRoute({
   security: [{ bearerAuth: [] }],
   request: {
     query: z.object({
-      action: z.string().optional(),
+      action: z.enum(['login','spec_uploaded','spec_updated','service_deleted','grant_created','grant_revoked','token_created','token_revoked','user_created','user_disabled','team_created']).optional(),
       userId: z.string().optional(),
       from: z.string().optional(),
       to: z.string().optional(),
@@ -51,7 +51,7 @@ auditRouter.openapi(createRoute({
   const offset = (page - 1) * pageSize
 
   const conditions: SQL<unknown>[] = []
-  if (action) conditions.push(eq(auditLogs.action, action as any))
+  if (action) conditions.push(eq(auditLogs.action, action))
   if (userId) conditions.push(eq(auditLogs.userId, userId))
   if (from) conditions.push(gte(auditLogs.createdAt, new Date(from)))
   if (to) conditions.push(lte(auditLogs.createdAt, new Date(to)))
