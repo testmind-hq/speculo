@@ -10,9 +10,12 @@ const mockConfig = {
 vi.mock('../db/index.js', () => ({
   db: {
     select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn().mockResolvedValue([mockConfig]),
-      })),
+      from: vi.fn(() => {
+        const resolved = Promise.resolve([mockConfig])
+        return Object.assign(resolved, {
+          where: vi.fn().mockResolvedValue([mockConfig]),
+        })
+      }),
     })),
     insert: vi.fn(() => ({
       values: vi.fn(() => ({
@@ -27,7 +30,9 @@ vi.mock('../db/index.js', () => ({
       })),
     })),
     delete: vi.fn(() => ({
-      where: vi.fn().mockResolvedValue([]),
+      where: vi.fn(() => ({
+        returning: vi.fn().mockResolvedValue([{ id: mockConfig.id }]),
+      })),
     })),
     query: {
       webhookConfigs: {
@@ -103,5 +108,9 @@ describe('POST /api/admin/webhooks/:id/test', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as any
     expect(body.ok).toBe(true)
+    expect(mockSend).toHaveBeenCalledWith(
+      mockConfig.url,
+      expect.objectContaining({ type: 'test' })
+    )
   })
 })

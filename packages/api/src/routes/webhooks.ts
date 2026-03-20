@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
-import { eq, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { webhookConfigs } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
@@ -36,7 +36,7 @@ webhooksRouter.openapi(createRoute({
   },
 }), async (c) => {
   if (c.get('userRole') !== 'super_admin') return c.json({ error: 'Forbidden' }, 403 as const)
-  const rows = await db.select().from(webhookConfigs).where(sql`true`)
+  const rows = await db.select().from(webhookConfigs)
   return c.json({ webhooks: rows.map(r => ({ ...r, createdAt: r.createdAt.toISOString() })) }, 200 as const)
 })
 
@@ -69,12 +69,10 @@ webhooksRouter.openapi(createRoute({
   },
 }), async (c) => {
   if (c.get('userRole') !== 'super_admin') return c.json({ error: 'Forbidden' }, 403 as const)
-  const userId = c.get('userId')
-  if (!userId) return c.json({ error: 'Unauthorized' }, 403 as const)
   const { name, teamId, url, providerType, events } = c.req.valid('json')
   const [row] = await db.insert(webhookConfigs).values({
     name, teamId: teamId ?? null, url, providerType: providerType ?? 'feishu',
-    events, createdBy: userId,
+    events, createdBy: c.get('userId')!,
   }).returning()
   return c.json({ ...row, createdAt: row.createdAt.toISOString() }, 200 as const)
 })
@@ -126,11 +124,13 @@ webhooksRouter.openapi(createRoute({
   responses: {
     204: { description: 'Deleted' },
     403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
+    404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Not found' },
   },
 }), async (c) => {
   if (c.get('userRole') !== 'super_admin') return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
-  await db.delete(webhookConfigs).where(eq(webhookConfigs.id, id))
+  const deleted = await db.delete(webhookConfigs).where(eq(webhookConfigs.id, id)).returning({ id: webhookConfigs.id })
+  if (deleted.length === 0) return c.json({ error: 'Not found' }, 404 as const)
   return c.body(null, 204 as const)
 })
 

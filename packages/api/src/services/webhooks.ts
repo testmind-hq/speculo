@@ -1,4 +1,4 @@
-import { eq, or, isNull, and, sql } from 'drizzle-orm'
+import { eq, or, isNull, and, inArray, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { webhookConfigs } from '../db/schema.js'
 
@@ -69,17 +69,16 @@ export async function emitWebhookEvent(
 ): Promise<void> {
   try {
     const eventType = payload.event
+    if (!eventType) return  // safety guard: no real event type = no dispatch
     const configs = await db
       .select()
       .from(webhookConfigs)
       .where(
         and(
           eq(webhookConfigs.isActive, true),
-          eventType
-            ? sql`${webhookConfigs.events} @> ARRAY[${eventType}]::text[]`
-            : sql`true`,
+          sql`${webhookConfigs.events} @> ARRAY[${eventType}]::text[]`,
           teamIds.length > 0
-            ? or(isNull(webhookConfigs.teamId), sql`${webhookConfigs.teamId} = ANY(${teamIds})`)
+            ? or(isNull(webhookConfigs.teamId), inArray(webhookConfigs.teamId, teamIds))
             : isNull(webhookConfigs.teamId),
         ),
       )
