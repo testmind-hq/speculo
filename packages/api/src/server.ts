@@ -16,6 +16,7 @@ import { llmsRouter } from './routes/llms.js'
 import { mcpRouter } from './mcp/transport.js'
 import { adminRouter } from './routes/admin.js'
 import { auditRouter } from './routes/audit.js'
+import { diffRouter } from './routes/diff.js'
 
 const app = new OpenAPIHono()
 
@@ -40,6 +41,7 @@ app.route('/', llmsRouter)
 app.route('/', mcpRouter)
 app.route('/', adminRouter)
 app.route('/', auditRouter)
+app.route('/', diffRouter)
 
 // OpenAPI spec endpoint
 app.doc('/openapi.json', {
