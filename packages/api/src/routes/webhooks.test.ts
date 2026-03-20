@@ -37,8 +37,12 @@ vi.mock('../db/index.js', () => ({
   },
 }))
 
+const mockSend = vi.fn().mockResolvedValue(undefined)
+
 vi.mock('../services/webhooks.js', () => ({
   emitWebhookEvent: vi.fn().mockResolvedValue(undefined),
+  feishuProvider: { send: mockSend },
+  providers: { feishu: { send: mockSend } },
 }))
 
 vi.mock('../middleware/jwtAuth.js', () => ({
@@ -73,8 +77,28 @@ describe('POST /api/admin/webhooks', () => {
   })
 })
 
+describe('PATCH /api/admin/webhooks/:id', () => {
+  it('updates a webhook config', async () => {
+    const res = await app.request('/api/admin/webhooks/00000000-0000-0000-0000-000000000001', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isActive: false }),
+    })
+    expect(res.status).toBe(200)
+  })
+})
+
+describe('DELETE /api/admin/webhooks/:id', () => {
+  it('deletes a webhook config and returns 204', async () => {
+    const res = await app.request('/api/admin/webhooks/00000000-0000-0000-0000-000000000001', {
+      method: 'DELETE',
+    })
+    expect(res.status).toBe(204)
+  })
+})
+
 describe('POST /api/admin/webhooks/:id/test', () => {
-  it('sends a test event and returns ok', async () => {
+  it('sends a test event directly to the provider and returns ok', async () => {
     const res = await app.request('/api/admin/webhooks/00000000-0000-0000-0000-000000000001/test', { method: 'POST' })
     expect(res.status).toBe(200)
     const body = await res.json() as any

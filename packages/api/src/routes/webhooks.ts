@@ -3,7 +3,7 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { webhookConfigs } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
-import { emitWebhookEvent } from '../services/webhooks.js'
+import { emitWebhookEvent, providers, feishuProvider } from '../services/webhooks.js'
 
 export const webhooksRouter = new OpenAPIHono()
 webhooksRouter.use('/api/admin/webhooks', jwtAuth)
@@ -81,7 +81,7 @@ webhooksRouter.openapi(createRoute({
 
 // Update
 webhooksRouter.openapi(createRoute({
-  method: 'put',
+  method: 'patch',
   path: '/api/admin/webhooks/:id',
   operationId: 'updateWebhook',
   tags: ['Admin'],
@@ -124,14 +124,14 @@ webhooksRouter.openapi(createRoute({
   security: [{ bearerAuth: [] }],
   request: { params: z.object({ id: z.string().uuid() }) },
   responses: {
-    200: { content: { 'application/json': { schema: z.object({ ok: z.boolean() }) } }, description: 'Deleted' },
+    204: { description: 'Deleted' },
     403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
   },
 }), async (c) => {
   if (c.get('userRole') !== 'super_admin') return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
   await db.delete(webhookConfigs).where(eq(webhookConfigs.id, id))
-  return c.json({ ok: true }, 200 as const)
+  return c.body(null, 204 as const)
 })
 
 // Test endpoint
@@ -151,13 +151,13 @@ webhooksRouter.openapi(createRoute({
 }), async (c) => {
   if (c.get('userRole') !== 'super_admin') return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
-  const cfg = await db.query.webhookConfigs.findFirst({ where: eq(webhookConfigs.id, id) })
-  if (!cfg) return c.json({ error: 'Not found' }, 404 as const)
-  await emitWebhookEvent({
-    event: 'spec.uploaded',
+  const config = await db.query.webhookConfigs.findFirst({ where: eq(webhookConfigs.id, id) })
+  if (!config) return c.json({ error: 'Not found' }, 404 as const)
+  const provider = providers[config.providerType] ?? feishuProvider
+  void provider.send(config.url, {
+    type: 'test',
     timestamp: new Date().toISOString(),
-    actor: 'test',
-    detail: { test: true },
+    meta: { manual: true },
   })
   return c.json({ ok: true }, 200 as const)
 })
