@@ -137,6 +137,7 @@ export const auditLogs = pgTable('audit_logs', {
 export const webhookConfigs = pgTable('webhook_configs', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: varchar('name', { length: 200 }).notNull(),
+  // NULL = global webhook (fires for all teams); non-null = team-scoped webhook
   teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }),
   url: text('url').notNull(),
   providerType: varchar('provider_type', { length: 50 }).notNull().default('feishu'),
