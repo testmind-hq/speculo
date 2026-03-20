@@ -1,0 +1,37 @@
+# Speculo GitLab CI template
+# Copy this file to your service repo as .gitlab-ci.yml (or include it)
+# Set CI/CD variables: SPECULO_URL (variable) and SPECULO_TOKEN (masked secret)
+
+speculo-sync:
+  image: node:22-alpine
+  rules:
+    - changes:
+        - openapi.yaml
+        - openapi.json
+        - swagger.yaml
+        - swagger.json
+  script:
+    - npm install -g @scalar/cli @stoplight/spectral-cli
+    - |
+      for f in openapi.yaml openapi.json swagger.yaml swagger.json; do
+        [ -f "$f" ] && SPEC_FILE=$f && break
+      done
+      if [ -z "$SPEC_FILE" ]; then
+        echo "No OpenAPI spec file found" && exit 1
+      fi
+      npx @scalar/cli document upgrade "$SPEC_FILE" --output openapi3.json
+    - spectral lint openapi3.json --fail-on-unmatched-pattern=false
+    - |
+      SERVICE=$(cat .speculo-service 2>/dev/null || echo "$CI_PROJECT_NAME")
+      curl -f -X POST "$SPECULO_URL/api/upload" \
+        -H "Authorization: Bearer $SPECULO_TOKEN" \
+        -H "Content-Type: application/json" \
+        -d "{
+          \"service\": \"$SERVICE\",
+          \"branch\": \"$CI_COMMIT_REF_NAME\",
+          \"commitSha\": \"$CI_COMMIT_SHA\",
+          \"specContent\": $(node -e \"process.stdout.write(JSON.stringify(require('fs').readFileSync('openapi3.json','utf8')))\")
+        }"
+  variables:
+    SPECULO_URL: $SPECULO_URL
+    SPECULO_TOKEN: $SPECULO_TOKEN

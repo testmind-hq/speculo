@@ -52,9 +52,11 @@ authRouter.openapi(createRoute({
   },
   responses: {
     200: { content: { 'application/json': { schema: z.object({ userId: z.string() }) } }, description: 'User created' },
+    403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
     409: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Email already registered' },
   },
 }), async (c) => {
+  if (c.get('userRole') !== 'super_admin') return c.json({ error: 'Forbidden' }, 403 as const)
   const { email, password } = c.req.valid('json')
   const existing = await db.query.users.findFirst({ where: eq(users.email, email) })
   if (existing) return c.json({ error: 'Email already registered' }, 409 as const)
@@ -77,21 +79,21 @@ authRouter.openapi(createRoute({
     },
   },
   responses: {
-    200: { content: { 'application/json': { schema: z.object({ token: z.string(), userId: z.string() }) } }, description: 'Login successful' },
+    200: { content: { 'application/json': { schema: z.object({ token: z.string(), userId: z.string(), role: z.string() }) } }, description: 'Login successful' },
     401: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Invalid credentials' },
   },
 }), async (c) => {
   const { email, password } = c.req.valid('json')
   const user = await db.query.users.findFirst({ where: eq(users.email, email) })
-  if (!user) return c.json({ error: 'Invalid credentials' }, 401 as const)
+  if (!user || !user.isActive) return c.json({ error: 'Invalid credentials' }, 401 as const)
   const valid = await bcrypt.compare(password, user.passwordHash)
   if (!valid) return c.json({ error: 'Invalid credentials' }, 401 as const)
   const token = await sign(
-    { userId: user.id, exp: Math.floor(Date.now() / 1000) + env.JWT_EXPIRY_DAYS * 86400 },
+    { userId: user.id, role: user.role, exp: Math.floor(Date.now() / 1000) + env.JWT_EXPIRY_DAYS * 86400 },
     env.JWT_SECRET
   )
   setAuthCookie(c, token)
-  return c.json({ token, userId: user.id }, 200 as const)
+  return c.json({ token, userId: user.id, role: user.role }, 200 as const)
 })
 
 authRouter.openapi(createRoute({

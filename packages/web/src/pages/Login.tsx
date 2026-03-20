@@ -14,8 +14,9 @@ export default function Login() {
     setLoading(true)
     setError('')
     try {
-      const { token } = await api.login(email, password)
+      const { token, role } = await api.login(email, password)
       localStorage.setItem('speculo_token', token)
+      localStorage.setItem('speculo_role', role)
       navigate('/')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Login failed')

@@ -1,11 +1,15 @@
 import type { MiddlewareHandler } from 'hono'
 import { getCookie } from 'hono/cookie'
 import { verify } from 'hono/jwt'
+import { eq } from 'drizzle-orm'
 import { env } from '../env.js'
+import { db } from '../db/index.js'
+import { users } from '../db/schema.js'
 
 declare module 'hono' {
   interface ContextVariableMap {
     userId: string
+    userRole: string
   }
 }
 
@@ -24,6 +28,15 @@ export const jwtAuth: MiddlewareHandler = async (c, next) => {
       return c.json({ error: 'Unauthorized' }, 401)
     }
     c.set('userId', payload.userId)
+
+    // Fetch and cache role for permission checks in routes
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, payload.userId),
+      columns: { role: true, isActive: true },
+    })
+    if (!user || !user.isActive) return c.json({ error: 'Unauthorized' }, 401)
+    c.set('userRole', user.role)
+
     await next()
   } catch {
     return c.json({ error: 'Unauthorized' }, 401)
