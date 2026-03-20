@@ -61,12 +61,24 @@ const { uploadRouter } = await import('./upload.js')
 const { db }           = await import('../db/index.js')
 const app = new Hono().route('/', uploadRouter)
 
+const makeTxSelectChain = (rows: any[] = []) => ({
+  from: vi.fn(() => ({
+    where: vi.fn(() => ({
+      orderBy: vi.fn(() => ({
+        limit: vi.fn().mockResolvedValue(rows),
+      })),
+    })),
+  })),
+})
+
 beforeEach(() => {
   // Default tx mock: insert spec_versions returns [{ id: 'new-spec-1' }]
+  // tx.select for the pruning query returns < 5 rows → no delete triggered
   txMock = {
     update: vi.fn(() => makeUpdateChain()),
     insert: vi.fn(() => makeInsertChain([{ id: 'new-spec-1' }])),
     delete: vi.fn(() => makeDeleteChain()),
+    select: vi.fn(() => makeTxSelectChain([{ id: 'new-spec-1' }])),
   }
 
   // Default db.select sequence:

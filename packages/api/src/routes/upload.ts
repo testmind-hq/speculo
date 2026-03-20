@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
-import { sql, eq, and, ne } from 'drizzle-orm'
+import { sql, eq, and, notInArray } from 'drizzle-orm'
 import { createHash } from 'node:crypto'
 import { db } from '../db/index.js'
 import { services, specVersions, endpointIndex } from '../db/schema.js'
@@ -153,15 +153,25 @@ uploadRouter.openapi(createRoute({
       await tx.delete(endpointIndex).where(eq(endpointIndex.specId, current.id))
     }
 
-    // Delete all non-latest spec_versions for this service+branch (keep storage bounded)
-    await tx.delete(specVersions).where(
-      and(
-        eq(specVersions.serviceId, svc.id),
-        eq(specVersions.branch, branch!),
-        ne(specVersions.id, newSpec.id),
-        eq(specVersions.isLatest, false),
+    // Prune: keep only the latest 5 spec_versions per service+branch (retains history for diff)
+    // Run AFTER the insert so the new version is included in the top-5 selection.
+    const latest5 = await tx
+      .select({ id: specVersions.id })
+      .from(specVersions)
+      .where(and(eq(specVersions.serviceId, svc.id), eq(specVersions.branch, branch!)))
+      .orderBy(sql`${specVersions.uploadedAt} DESC`)
+      .limit(5)
+    const keepIds = latest5.map(r => r.id)
+    // Guard: notInArray with an empty array produces invalid SQL — only prune once we have >= 5.
+    if (keepIds.length >= 5) {
+      await tx.delete(specVersions).where(
+        and(
+          eq(specVersions.serviceId, svc.id),
+          eq(specVersions.branch, branch!),
+          notInArray(specVersions.id, keepIds),
+        )
       )
-    )
+    }
 
     // Insert new endpoint index
     if (endpointRows.length > 0) {
