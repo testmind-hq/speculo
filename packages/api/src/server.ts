@@ -17,6 +17,7 @@ import { mcpRouter } from './mcp/transport.js'
 import { adminRouter } from './routes/admin.js'
 import { auditRouter } from './routes/audit.js'
 import { diffRouter } from './routes/diff.js'
+import { webhooksRouter } from './routes/webhooks.js'
 
 const app = new OpenAPIHono()
 
@@ -42,6 +43,7 @@ app.route('/', mcpRouter)
 app.route('/', adminRouter)
 app.route('/', auditRouter)
 app.route('/', diffRouter)
+app.route('/', webhooksRouter)
 
 // OpenAPI spec endpoint
 app.doc('/openapi.json', {
