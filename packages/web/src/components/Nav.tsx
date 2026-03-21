@@ -22,6 +22,8 @@ export default function Nav() {
           {isSuperAdmin && <>
             <Link to="/admin/teams" className="text-gray-400 hover:text-white">Teams</Link>
             <Link to="/admin/users" className="text-gray-400 hover:text-white">Users</Link>
+            <Link to="/admin/audit-logs" className="text-gray-400 hover:text-white">Audit Logs</Link>
+            <Link to="/admin/webhooks" className="text-gray-400 hover:text-white">Webhooks</Link>
           </>}
           <button onClick={logout} className="text-gray-500 hover:text-white">Logout</button>
         </div>

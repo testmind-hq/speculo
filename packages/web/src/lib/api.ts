@@ -73,6 +73,52 @@ export type Me = {
   teams: { id: string; name: string; displayName: string | null; role: string }[]
 }
 
+export interface AuditLog {
+  id: string
+  userId: string | null
+  userEmail: string | null
+  action: string
+  targetId: string | null
+  targetName: string | null
+  meta: string | null
+  createdAt: string
+}
+
+export interface WebhookConfig {
+  id: string
+  name: string
+  teamId: string | null
+  url: string
+  providerType: string
+  events: string[]
+  isActive: boolean
+  createdBy: string
+  createdAt: string
+}
+
+export interface SpecVersion {
+  id: string
+  serviceId: string
+  branch: string
+  commitSha: string | null
+  endpointCount: number
+  isLatest: boolean
+  uploadedAt: string
+}
+
+export interface EndpointSummary {
+  method: string
+  path: string
+  operationId: string | null
+  summary: string | null
+}
+
+export interface DiffResult {
+  added: EndpointSummary[]
+  removed: EndpointSummary[]
+  modified: EndpointSummary[]
+}
+
 export const api = {
   login: (email: string, password: string) =>
     request<{ token: string; userId: string; role: string }>('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) }),
@@ -137,5 +183,35 @@ export const api = {
       delete: (id: string) =>
         request<{ ok: boolean }>(`/api/admin/users/${id}`, { method: 'DELETE' }),
     },
+  },
+
+  audit: {
+    list: (params?: { action?: string; userId?: string; from?: string; to?: string; page?: number; pageSize?: number }) => {
+      const qs = new URLSearchParams()
+      if (params?.action) qs.set('action', params.action)
+      if (params?.userId) qs.set('userId', params.userId)
+      if (params?.from) qs.set('from', params.from)
+      if (params?.to) qs.set('to', params.to)
+      if (params?.page) qs.set('page', String(params.page))
+      if (params?.pageSize) qs.set('pageSize', String(params.pageSize))
+      const q = qs.toString()
+      return request<{ logs: AuditLog[]; total: number; page: number; pageSize: number }>(`/api/admin/audit-logs${q ? `?${q}` : ''}`)
+    },
+  },
+
+  webhooks: {
+    list: () => request<{ webhooks: WebhookConfig[] }>('/api/admin/webhooks'),
+    create: (body: { name: string; url: string; events: string[]; teamId?: string; providerType?: string; isActive?: boolean }) =>
+      request<WebhookConfig>('/api/admin/webhooks', { method: 'POST', body: JSON.stringify(body) }),
+    update: (id: string, body: { name?: string; url?: string; events?: string[]; isActive?: boolean }) =>
+      request<WebhookConfig>(`/api/admin/webhooks/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    delete: (id: string) => request<void>(`/api/admin/webhooks/${id}`, { method: 'DELETE' }),
+    test: (id: string) => request<{ ok: boolean }>(`/api/admin/webhooks/${id}/test`, { method: 'POST' }),
+  },
+
+  diff: {
+    compare: (fromId: string, toId: string) => request<DiffResult>(`/api/diff?from=${fromId}&to=${toId}`),
+    versions: (service: string, branch: string) =>
+      request<{ versions: SpecVersion[] }>(`/api/specs/${encodeURIComponent(service)}/versions?branch=${encodeURIComponent(branch)}`),
   },
 }
