@@ -4,6 +4,7 @@ import Login from './pages/Login.js'
 import Catalog from './pages/Catalog.js'
 import Import from './pages/Import.js'
 import Tokens from './pages/Tokens.js'
+import Diff from './pages/Diff.js'
 import AdminTeams from './pages/admin/Teams.js'
 import TeamMembers from './pages/admin/TeamMembers.js'
 import TeamServices from './pages/admin/TeamServices.js'
@@ -64,6 +65,7 @@ export default function App() {
       <Route path="/" element={<PrivateLayout><Catalog /></PrivateLayout>} />
       <Route path="/import" element={<PrivateLayout><Import /></PrivateLayout>} />
       <Route path="/settings/tokens" element={<PrivateLayout><Tokens /></PrivateLayout>} />
+      <Route path="/diff" element={<PrivateLayout><Diff /></PrivateLayout>} />
       <Route path="/admin/teams" element={<AdminLayout requiredRole="super_admin"><AdminTeams /></AdminLayout>} />
       <Route path="/admin/teams/:id/members" element={<AdminLayout><TeamMembers /></AdminLayout>} />
       <Route path="/admin/teams/:id/services" element={<AdminLayout><TeamServices /></AdminLayout>} />
