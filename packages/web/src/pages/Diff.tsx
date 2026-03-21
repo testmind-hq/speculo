@@ -308,14 +308,14 @@ export default function Diff() {
                     Modified ({result.modified.length})
                   </h2>
                   <ul className="space-y-1">
-                    {result.modified.map((ep, i) => (
+                    {result.modified.map(({ before, after }, i) => (
                       <li key={i} className="flex items-center gap-2 text-sm">
                         <span className="rounded px-1.5 py-0.5 bg-yellow-800/50 text-yellow-300 font-mono text-xs uppercase">
-                          {ep.method}
+                          {after.method}
                         </span>
-                        <span className="text-yellow-200 font-mono">{ep.path}</span>
-                        {ep.summary && (
-                          <span className="text-yellow-600 truncate">{ep.summary}</span>
+                        <span className="text-yellow-200 font-mono">{after.path}</span>
+                        {after.summary && (
+                          <span className="text-yellow-600 truncate">{before.summary} → {after.summary}</span>
                         )}
                       </li>
                     ))}

@@ -17,24 +17,24 @@ const mockLogs = [
 // The route calls db.select() twice via Promise.all:
 //   1. rows query:  select().from(auditLogs).leftJoin(users).where().orderBy().limit().offset()
 //   2. count query: select({ count }).from(auditLogs).where()
-// We use mockReturnValueOnce to return them in order.
-const rowsChain: any = {
-  where: vi.fn(() => rowsChain),
-  orderBy: vi.fn(() => rowsChain),
-  limit: vi.fn(() => rowsChain),
-  offset: vi.fn().mockResolvedValue(mockLogs),
+// selectMock is reset in beforeEach so each test gets fresh chains.
+const makeRowsChain = () => {
+  const chain: any = {
+    where: vi.fn(),
+    orderBy: vi.fn(),
+    limit: vi.fn(),
+    offset: vi.fn().mockResolvedValue(mockLogs),
+  }
+  chain.where.mockReturnValue(chain)
+  chain.orderBy.mockReturnValue(chain)
+  chain.limit.mockReturnValue(chain)
+  return chain
 }
-const countChain: any = {
-  where: vi.fn().mockResolvedValue([{ count: '1' }]),
-}
+const makeCountChain = () => ({ where: vi.fn().mockResolvedValue([{ count: '1' }]) })
 
-vi.mock('../db/index.js', () => ({
-  db: {
-    select: vi.fn()
-      .mockReturnValueOnce({ from: vi.fn(() => ({ leftJoin: vi.fn(() => rowsChain) })) })
-      .mockReturnValueOnce({ from: vi.fn(() => countChain) }),
-  },
-}))
+const selectMock = vi.fn()
+
+vi.mock('../db/index.js', () => ({ db: { select: selectMock } }))
 
 vi.mock('../middleware/jwtAuth.js', () => ({
   jwtAuth: vi.fn(async (c: any, next: any) => {
@@ -48,6 +48,12 @@ const { auditRouter } = await import('./audit.js')
 const app = new Hono().route('/', auditRouter)
 
 describe('GET /api/admin/audit-logs', () => {
+  beforeEach(() => {
+    selectMock
+      .mockReturnValueOnce({ from: vi.fn(() => ({ leftJoin: vi.fn(() => makeRowsChain()) })) })
+      .mockReturnValueOnce({ from: vi.fn(() => makeCountChain()) })
+  })
+
   it('returns audit log entries for super_admin', async () => {
     const res = await app.request('/api/admin/audit-logs')
     expect(res.status).toBe(200)

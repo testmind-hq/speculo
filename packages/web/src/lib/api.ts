@@ -116,7 +116,7 @@ export interface EndpointSummary {
 export interface DiffResult {
   added: EndpointSummary[]
   removed: EndpointSummary[]
-  modified: EndpointSummary[]
+  modified: { before: EndpointSummary; after: EndpointSummary }[]
 }
 
 export const api = {

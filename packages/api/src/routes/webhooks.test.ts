@@ -114,3 +114,16 @@ describe('POST /api/admin/webhooks/:id/test', () => {
     )
   })
 })
+
+describe('super_admin guard', () => {
+  it('returns 403 for non-super_admin on GET /api/admin/webhooks', async () => {
+    vi.mocked((await import('../middleware/jwtAuth.js')).jwtAuth)
+      .mockImplementationOnce(async (c: any, next: any) => {
+        c.set('userId', 'user-2')
+        c.set('userRole', 'team_owner')
+        await next()
+      })
+    const res = await app.request('/api/admin/webhooks')
+    expect(res.status).toBe(403)
+  })
+})

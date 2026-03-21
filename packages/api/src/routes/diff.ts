@@ -74,8 +74,13 @@ diffRouter.openapi(createRoute({
   if (!fromVer) return c.json({ error: `Version not found: ${from}` }, 404 as const)
   if (!toVer) return c.json({ error: `Version not found: ${to}` }, 404 as const)
 
-  const fromSpec: ParsedSpec = JSON.parse(fromVer.specContent)
-  const toSpec: ParsedSpec = JSON.parse(toVer.specContent)
+  let fromSpec: ParsedSpec, toSpec: ParsedSpec
+  try {
+    fromSpec = JSON.parse(fromVer.specContent)
+    toSpec = JSON.parse(toVer.specContent)
+  } catch {
+    return c.json({ error: 'Spec content is not valid JSON' }, 500 as const)
+  }
 
   const fromMap = extractEndpointMap(fromSpec)
   const toMap = extractEndpointMap(toSpec)
