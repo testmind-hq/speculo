@@ -3,10 +3,10 @@ import { db } from '../db/index.js'
 import { webhookConfigs } from '../db/schema.js'
 
 export type WebhookEventType =
-  | 'spec.uploaded' | 'spec.updated' | 'service.deleted'
-  | 'grant.created' | 'grant.revoked'
-  | 'token.created' | 'token.revoked'
-  | 'permission.changed'
+  | 'spec_uploaded' | 'spec_updated' | 'service_deleted'
+  | 'grant_created' | 'grant_revoked'
+  | 'token_created' | 'token_revoked'
+  | 'team_created' | 'user_disabled'
 
 export interface WebhookEvent {
   event?: WebhookEventType

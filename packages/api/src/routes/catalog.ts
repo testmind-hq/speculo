@@ -163,7 +163,7 @@ catalogRouter.openapi(createRoute({
     targetName: existing.name,
   })
   void emitWebhookEvent({
-    event: 'service.deleted',
+    event: 'service_deleted',
     service: existing.name,
     timestamp: new Date().toISOString(),
   }, existing.teamId ? [existing.teamId] : [])

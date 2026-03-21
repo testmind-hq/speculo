@@ -173,7 +173,7 @@ authRouter.openapi(createRoute({
     .returning({ id: mcpTokens.id, name: mcpTokens.name, scope: mcpTokens.scope, prefix: mcpTokens.prefix, createdAt: mcpTokens.createdAt })
   void logEvent({ userId: c.get('userId'), action: 'token_created', targetId: newToken.id, targetName: name })
   void emitWebhookEvent({
-    event: 'token.created',
+    event: 'token_created',
     timestamp: new Date().toISOString(),
     meta: { tokenName: name, scope },
   }, [])
@@ -202,7 +202,7 @@ authRouter.openapi(createRoute({
   if (!result.length) return c.json({ error: 'Token not found' }, 404 as const)
   void logEvent({ userId: c.get('userId'), action: 'token_revoked', targetId: id })
   void emitWebhookEvent({
-    event: 'token.revoked',
+    event: 'token_revoked',
     timestamp: new Date().toISOString(),
     meta: { tokenId: id },
   }, [])

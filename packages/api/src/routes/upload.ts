@@ -200,7 +200,7 @@ uploadRouter.openapi(createRoute({
     meta: { branch, commitSha: commitSha ?? null, endpointCount: endpointRows.length },
   })
   void emitWebhookEvent({
-    event: current ? 'spec.updated' : 'spec.uploaded',
+    event: current ? 'spec_updated' : 'spec_uploaded',
     service,
     timestamp: new Date().toISOString(),
     meta: { commitSha: commitSha ?? null, endpointCount: endpointRows.length },

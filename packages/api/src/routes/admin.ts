@@ -83,7 +83,7 @@ adminRouter.openapi(createRoute({
   const [team] = await db.insert(teams).values({ name, displayName, description, createdBy: userId }).returning()
   void logEvent({ userId: c.get('userId'), action: 'team_created', targetName: name })
   void emitWebhookEvent({
-    type: 'team_created',
+    event: 'team_created',
     timestamp: new Date().toISOString(),
     meta: { teamName: name },
   }, [])
@@ -435,7 +435,7 @@ adminRouter.openapi(createRoute({
   }).returning({ id: crossTeamGrants.id })
   void logEvent({ userId: c.get('userId'), action: 'grant_created', targetId: grant.id })
   void emitWebhookEvent({
-    event: 'grant.created',
+    event: 'grant_created',
     timestamp: new Date().toISOString(),
     meta: { serviceId, granteeTeamId: granteeTeamId ?? null },
   }, id ? [id] : [])
@@ -478,7 +478,7 @@ adminRouter.openapi(createRoute({
   await db.delete(crossTeamGrants).where(eq(crossTeamGrants.id, id))
   void logEvent({ userId: c.get('userId'), action: 'grant_revoked', targetId: id })
   void emitWebhookEvent({
-    event: 'grant.revoked',
+    event: 'grant_revoked',
     timestamp: new Date().toISOString(),
     meta: { grantId: id },
   }, [])
@@ -576,7 +576,7 @@ adminRouter.openapi(createRoute({
   if (isActive === false) {
     void logEvent({ userId: c.get('userId'), action: 'user_disabled', targetId: id })
     void emitWebhookEvent({
-      type: 'user_disabled',
+      event: 'user_disabled',
       timestamp: new Date().toISOString(),
       meta: { targetUserId: id },
     }, [])
