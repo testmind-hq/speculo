@@ -37,8 +37,8 @@ export default function Diff() {
       setVersions(data.versions)
       if (data.versions.length >= 1) setToVersionId(data.versions[0].id)
       if (data.versions.length >= 2) setFromVersionId(data.versions[1].id)
-    } catch (err: any) {
-      setError(err.message ?? 'Failed to load versions.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load versions.')
     } finally {
       setVersionsLoading(false)
     }
@@ -92,8 +92,8 @@ export default function Diff() {
 
       const diff = await api.diff.compare(from, to)
       setResult(diff)
-    } catch (err: any) {
-      setError(err.message ?? 'Comparison failed.')
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Comparison failed.')
     } finally {
       setLoading(false)
     }
