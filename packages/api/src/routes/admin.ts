@@ -438,7 +438,7 @@ adminRouter.openapi(createRoute({
     event: 'grant_created',
     timestamp: new Date().toISOString(),
     meta: { serviceId, granteeTeamId: granteeTeamId ?? null },
-  }, id ? [id] : [])
+  }, [...(id ? [id] : []), ...(granteeTeamId ? [granteeTeamId] : [])])
   return c.json({ id: grant.id }, 200 as const)
 })
 
