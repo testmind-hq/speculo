@@ -9,6 +9,7 @@ import TeamMembers from './pages/admin/TeamMembers.js'
 import TeamServices from './pages/admin/TeamServices.js'
 import TeamGrants from './pages/admin/TeamGrants.js'
 import AdminUsers from './pages/admin/Users.js'
+import AuditLogs from './pages/admin/AuditLogs.js'
 import Nav from './components/Nav.js'
 
 function PrivateLayout({ children }: { children: React.ReactNode }) {
@@ -67,6 +68,7 @@ export default function App() {
       <Route path="/admin/teams/:id/services" element={<AdminLayout><TeamServices /></AdminLayout>} />
       <Route path="/admin/teams/:id/grants" element={<AdminLayout><TeamGrants /></AdminLayout>} />
       <Route path="/admin/users" element={<AdminLayout requiredRole="super_admin"><AdminUsers /></AdminLayout>} />
+      <Route path="/admin/audit-logs" element={<AdminLayout requiredRole="super_admin"><AuditLogs /></AdminLayout>} />
     </Routes>
   )
 }
