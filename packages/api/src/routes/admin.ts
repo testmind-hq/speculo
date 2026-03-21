@@ -481,7 +481,7 @@ adminRouter.openapi(createRoute({
     event: 'grant_revoked',
     timestamp: new Date().toISOString(),
     meta: { grantId: id },
-  }, [])
+  }, [grant.ownerTeamId])
   return c.json({ ok: true }, 200 as const)
 })
 

@@ -203,7 +203,7 @@ uploadRouter.openapi(createRoute({
     event: current ? 'spec_updated' : 'spec_uploaded',
     service,
     timestamp: new Date().toISOString(),
-    meta: { commitSha: commitSha ?? null, endpointCount: endpointRows.length },
+    meta: { branch, commitSha: commitSha ?? null, endpointCount: endpointRows.length },
   }, svc.teamId ? [svc.teamId] : [])
 
   return c.json({
