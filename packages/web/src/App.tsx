@@ -10,6 +10,7 @@ import TeamServices from './pages/admin/TeamServices.js'
 import TeamGrants from './pages/admin/TeamGrants.js'
 import AdminUsers from './pages/admin/Users.js'
 import AuditLogs from './pages/admin/AuditLogs.js'
+import Webhooks from './pages/admin/Webhooks.js'
 import Nav from './components/Nav.js'
 
 function PrivateLayout({ children }: { children: React.ReactNode }) {
@@ -69,6 +70,7 @@ export default function App() {
       <Route path="/admin/teams/:id/grants" element={<AdminLayout><TeamGrants /></AdminLayout>} />
       <Route path="/admin/users" element={<AdminLayout requiredRole="super_admin"><AdminUsers /></AdminLayout>} />
       <Route path="/admin/audit-logs" element={<AdminLayout requiredRole="super_admin"><AuditLogs /></AdminLayout>} />
+      <Route path="/admin/webhooks" element={<AdminLayout requiredRole="super_admin"><Webhooks /></AdminLayout>} />
     </Routes>
   )
 }
