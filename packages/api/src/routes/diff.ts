@@ -63,6 +63,7 @@ diffRouter.openapi(createRoute({
       description: 'Diff result',
     },
     404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Version not found' },
+    500: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Invalid spec content' },
   },
 }), async (c) => {
   const { from, to } = c.req.valid('query')

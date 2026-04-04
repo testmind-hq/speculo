@@ -1,6 +1,6 @@
 import { and, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { crossTeamGrants, services, teamMembers } from '../db/schema.js'
+import { crossTeamGrants, services, teamMembers, teams } from '../db/schema.js'
 
 /**
  * Returns the set of service IDs accessible to the user.
@@ -43,6 +43,37 @@ export async function getAccessibleServiceIds(
     ...ownedServices.map(s => s.id),
     ...grantedServices.map(g => g.serviceId),
   ])
+}
+
+/**
+ * Returns true if the user can access the named service at the specified branch.
+ * Convenience wrapper around canAccessService with branch required.
+ */
+export async function canAccessBranch(
+  userId: string,
+  serviceName: string,
+  branch: string,
+): Promise<boolean> {
+  // Fetch user role to pass to canAccessService
+  const { users } = await import('../db/schema.js')
+  const user = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { role: true },
+  })
+  if (!user) return false
+  return canAccessService(userId, user.role, serviceName, branch)
+}
+
+/**
+ * Returns the ID of the default team (isDefault = true).
+ * Returns null if no default team exists.
+ */
+export async function getDefaultTeamId(): Promise<string | null> {
+  const row = await db.query.teams.findFirst({
+    where: eq(teams.isDefault, true),
+    columns: { id: true },
+  })
+  return row?.id ?? null
 }
 
 /**

@@ -71,10 +71,10 @@ describe('searchEndpoints permission guard', () => {
 
     // Capture the tool callback by registering and calling it
     const originalTool = server.tool.bind(server)
-    vi.spyOn(server, 'tool').mockImplementationOnce((name, desc, schema, handler) => {
+    vi.spyOn(server, 'tool').mockImplementationOnce(((name: string, desc: string, schema: unknown, handler: (...args: any[]) => any) => {
       callResult = handler
-      return originalTool(name, desc, schema, handler)
-    })
+      return (originalTool as any)(name, desc, schema, handler)
+    }) as any)
 
     searchEndpointsTool(server, denyAll)
     const result = await callResult({ service: 'user-service', q: 'users' })
