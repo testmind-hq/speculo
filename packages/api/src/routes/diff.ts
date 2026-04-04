@@ -3,6 +3,7 @@ import { eq, and, desc } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { specVersions, services } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
+import { canAccessService } from '../services/permissions.js'
 
 export const diffRouter = new OpenAPIHono()
 diffRouter.use('/api/diff', jwtAuth)
@@ -62,11 +63,14 @@ diffRouter.openapi(createRoute({
       },
       description: 'Diff result',
     },
+    403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
     404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Version not found' },
     500: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Invalid spec content' },
   },
 }), async (c) => {
   const { from, to } = c.req.valid('query')
+  const userId = c.get('userId')
+  const userRole = c.get('userRole')
 
   const [fromVer, toVer] = await Promise.all([
     db.query.specVersions.findFirst({ where: eq(specVersions.id, from) }),
@@ -74,6 +78,17 @@ diffRouter.openapi(createRoute({
   ])
   if (!fromVer) return c.json({ error: `Version not found: ${from}` }, 404 as const)
   if (!toVer) return c.json({ error: `Version not found: ${to}` }, 404 as const)
+
+  // Collect distinct serviceIds referenced by these versions
+  const serviceIds = [...new Set([fromVer.serviceId, toVer.serviceId])]
+  const serviceRows = await Promise.all(
+    serviceIds.map(id => db.query.services.findFirst({ where: eq(services.id, id), columns: { name: true } }))
+  )
+  const serviceNames = serviceRows.flatMap(r => r ? [r.name] : [])
+  const accessResults = await Promise.all(
+    serviceNames.map(name => canAccessService(userId, userRole, name))
+  )
+  if (accessResults.some(ok => !ok)) return c.json({ error: 'Forbidden' }, 403 as const)
 
   let fromSpec: ParsedSpec, toSpec: ParsedSpec
   try {
@@ -136,11 +151,15 @@ diffRouter.openapi(createRoute({
       },
       description: 'Version list',
     },
+    403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
     404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Service not found' },
   },
 }), async (c) => {
   const { service } = c.req.valid('param')
   const { branch } = c.req.valid('query')
+
+  const accessible = await canAccessService(c.get('userId'), c.get('userRole'), service)
+  if (!accessible) return c.json({ error: 'Forbidden' }, 403 as const)
 
   const svc = await db.query.services.findFirst({ where: eq(services.name, service) })
   if (!svc) return c.json({ error: 'Service not found' }, 404 as const)

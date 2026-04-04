@@ -46,6 +46,10 @@ vi.mock('../middleware/jwtAuth.js', () => ({
   }),
 }))
 
+vi.mock('../services/permissions.js', () => ({
+  canAccessService: vi.fn().mockResolvedValue(true),
+}))
+
 const { diffRouter } = await import('./diff.js')
 const app = new Hono().route('/', diffRouter)
 
@@ -73,6 +77,16 @@ describe('GET /api/diff', () => {
     const res = await app.request('/api/diff?from=missing&to=ver-2')
     expect(res.status).toBe(404)
   })
+
+  it('returns 403 when user cannot access the service', async () => {
+    vi.mocked((await import('../db/index.js')).db.query.specVersions.findFirst)
+      .mockResolvedValueOnce(mockVersionFrom as any)
+      .mockResolvedValueOnce(mockVersionTo as any)
+    vi.mocked((await import('../services/permissions.js')).canAccessService)
+      .mockResolvedValueOnce(false)
+    const res = await app.request('/api/diff?from=ver-1&to=ver-2')
+    expect(res.status).toBe(403)
+  })
 })
 
 describe('GET /api/specs/:service/versions', () => {
@@ -89,5 +103,12 @@ describe('GET /api/specs/:service/versions', () => {
       .mockResolvedValueOnce(undefined as any)
     const res = await app.request('/api/specs/unknown/versions?branch=main')
     expect(res.status).toBe(404)
+  })
+
+  it('returns 403 when user cannot access the service', async () => {
+    vi.mocked((await import('../services/permissions.js')).canAccessService)
+      .mockResolvedValueOnce(false)
+    const res = await app.request('/api/specs/restricted-service/versions?branch=main')
+    expect(res.status).toBe(403)
   })
 })
