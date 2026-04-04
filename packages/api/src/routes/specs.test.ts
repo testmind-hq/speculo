@@ -14,8 +14,17 @@ vi.mock('../db/index.js', () => ({
     })),
   },
 }))
+
 vi.mock('../middleware/jwtAuth.js', () => ({
-  jwtAuth: vi.fn(async (_c: any, next: any) => next()),
+  jwtAuth: vi.fn(async (c: any, next: any) => {
+    c.set('userId', 'user-1')
+    c.set('userRole', 'guest')
+    await next()
+  }),
+}))
+
+vi.mock('../services/permissions.js', () => ({
+  canAccessService: vi.fn().mockResolvedValue(true),
 }))
 
 process.env.DATABASE_URL = 'postgresql://x:x@localhost/x'
@@ -37,5 +46,12 @@ describe('GET /api/specs/:service/:branch/openapi.json', () => {
       .mockReturnValueOnce({ from: () => ({ innerJoin: () => ({ where: () => Promise.resolve([]) }) }) } as any)
     const res = await app.request('/api/specs/unknown/main/openapi.json')
     expect(res.status).toBe(404)
+  })
+
+  it('returns 403 when user cannot access the service', async () => {
+    vi.mocked((await import('../services/permissions.js')).canAccessService)
+      .mockResolvedValueOnce(false)
+    const res = await app.request('/api/specs/user-service/main/openapi.json')
+    expect(res.status).toBe(403)
   })
 })
