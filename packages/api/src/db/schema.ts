@@ -104,3 +104,45 @@ export const mcpTokens = pgTable('mcp_tokens', {
   lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 })
+
+export const auditActionEnum = pgEnum('audit_action', [
+  'login',
+  'spec_uploaded',
+  'spec_updated',
+  'service_deleted',
+  'grant_created',
+  'grant_revoked',
+  'token_created',
+  'token_revoked',
+  'user_created',
+  'user_disabled',
+  'team_created',
+])
+
+export const auditLogs = pgTable('audit_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // SET NULL on delete: audit log persists when a user is deleted, userId just becomes null
+  userId: uuid('user_id').references(() => users.id, { onDelete: 'set null' }),
+  action: auditActionEnum('action').notNull(),
+  targetId: varchar('target_id', { length: 255 }),
+  targetName: varchar('target_name', { length: 255 }),
+  meta: text('meta'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+}, (t) => ({
+  createdAtIdx: index('idx_audit_logs_created_at').on(t.createdAt),
+  actionIdx: index('idx_audit_logs_action').on(t.action),
+  userIdx: index('idx_audit_logs_user').on(t.userId),
+}))
+
+export const webhookConfigs = pgTable('webhook_configs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: varchar('name', { length: 200 }).notNull(),
+  // NULL = global webhook (fires for all teams); non-null = team-scoped webhook
+  teamId: uuid('team_id').references(() => teams.id, { onDelete: 'cascade' }),
+  url: text('url').notNull(),
+  providerType: varchar('provider_type', { length: 50 }).notNull().default('feishu'),
+  events: text('events').array().notNull(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdBy: uuid('created_by').references(() => users.id).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+})

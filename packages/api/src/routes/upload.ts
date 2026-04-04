@@ -1,5 +1,5 @@
 import { OpenAPIHono, createRoute, z } from '@hono/zod-openapi'
-import { sql, eq, and, ne } from 'drizzle-orm'
+import { sql, eq, and, notInArray } from 'drizzle-orm'
 import { createHash } from 'node:crypto'
 import { db } from '../db/index.js'
 import { services, specVersions, endpointIndex } from '../db/schema.js'
@@ -8,6 +8,8 @@ import { normalizeSpec } from '../services/specProcessor.js'
 import { extractEndpoints } from '../services/indexBuilder.js'
 import { specCache } from '../services/cache.js'
 import { getDefaultTeamId } from '../services/permissions.js'
+import { logEvent } from '../services/audit.js'
+import { emitWebhookEvent } from '../services/webhooks.js'
 
 export const uploadRouter = new OpenAPIHono()
 
@@ -111,7 +113,7 @@ uploadRouter.openapi(createRoute({
   // Upsert service — assign to default team on first creation
   const defaultTeamId = await getDefaultTeamId()
   await db.insert(services).values({ name: service!, teamId: defaultTeamId }).onConflictDoNothing()
-  const [svc] = await db.select({ id: services.id }).from(services).where(eq(services.name, service!))
+  const [svc] = await db.select({ id: services.id, teamId: services.teamId }).from(services).where(eq(services.name, service!))
   if (!svc) return c.json({ error: 'Service not found after upsert' }, 400 as const)
 
   // Dedup: if the current latest has the same hash, skip the write entirely
@@ -153,15 +155,25 @@ uploadRouter.openapi(createRoute({
       await tx.delete(endpointIndex).where(eq(endpointIndex.specId, current.id))
     }
 
-    // Delete all non-latest spec_versions for this service+branch (keep storage bounded)
-    await tx.delete(specVersions).where(
-      and(
-        eq(specVersions.serviceId, svc.id),
-        eq(specVersions.branch, branch!),
-        ne(specVersions.id, newSpec.id),
-        eq(specVersions.isLatest, false),
+    // Prune: keep only the latest 5 spec_versions per service+branch (retains history for diff)
+    // Run AFTER the insert so the new version is included in the top-5 selection.
+    const latest5 = await tx
+      .select({ id: specVersions.id })
+      .from(specVersions)
+      .where(and(eq(specVersions.serviceId, svc.id), eq(specVersions.branch, branch!)))
+      .orderBy(sql`${specVersions.uploadedAt} DESC`)
+      .limit(5)
+    const keepIds = latest5.map(r => r.id)
+    // Guard: notInArray with an empty array produces invalid SQL — only prune once we have >= 5.
+    if (keepIds.length >= 5) {
+      await tx.delete(specVersions).where(
+        and(
+          eq(specVersions.serviceId, svc.id),
+          eq(specVersions.branch, branch!),
+          notInArray(specVersions.id, keepIds),
+        )
       )
-    )
+    }
 
     // Insert new endpoint index
     if (endpointRows.length > 0) {
@@ -178,6 +190,21 @@ uploadRouter.openapi(createRoute({
 
   // Invalidate cache after commit
   specCache.delete(`${service}:${branch}`)
+
+  // Audit: distinguish first upload vs update
+  void logEvent({
+    userId: c.get('userId') ?? null,
+    action: current ? 'spec_updated' : 'spec_uploaded',
+    targetId: svc.id,
+    targetName: service,
+    meta: { branch, commitSha: commitSha ?? null, endpointCount: endpointRows.length },
+  })
+  void emitWebhookEvent({
+    event: current ? 'spec_updated' : 'spec_uploaded',
+    service,
+    timestamp: new Date().toISOString(),
+    meta: { branch, commitSha: commitSha ?? null, endpointCount: endpointRows.length },
+  }, svc.teamId ? [svc.teamId] : [])
 
   return c.json({
     service,

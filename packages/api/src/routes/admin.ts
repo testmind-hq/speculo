@@ -3,6 +3,8 @@ import { eq, and } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { users, teams, teamMembers, services, crossTeamGrants } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
+import { logEvent } from '../services/audit.js'
+import { emitWebhookEvent } from '../services/webhooks.js'
 
 export const adminRouter = new OpenAPIHono()
 
@@ -79,6 +81,12 @@ adminRouter.openapi(createRoute({
   if (existing) return c.json({ error: 'Team name already taken' }, 409 as const)
   const userId = c.get('userId')
   const [team] = await db.insert(teams).values({ name, displayName, description, createdBy: userId }).returning()
+  void logEvent({ userId: c.get('userId'), action: 'team_created', targetName: name })
+  void emitWebhookEvent({
+    event: 'team_created',
+    timestamp: new Date().toISOString(),
+    meta: { teamName: name },
+  }, [])
   return c.json({ ...team, createdAt: team.createdAt.toISOString() }, 200 as const)
 })
 
@@ -425,6 +433,12 @@ adminRouter.openapi(createRoute({
     grantedBy,
     expiresAt: expiresAt ? new Date(expiresAt) : null,
   }).returning({ id: crossTeamGrants.id })
+  void logEvent({ userId: c.get('userId'), action: 'grant_created', targetId: grant.id })
+  void emitWebhookEvent({
+    event: 'grant_created',
+    timestamp: new Date().toISOString(),
+    meta: { serviceId, granteeTeamId: granteeTeamId ?? null },
+  }, [...(id ? [id] : []), ...(granteeTeamId ? [granteeTeamId] : [])])
   return c.json({ id: grant.id }, 200 as const)
 })
 
@@ -462,6 +476,12 @@ adminRouter.openapi(createRoute({
   }
 
   await db.delete(crossTeamGrants).where(eq(crossTeamGrants.id, id))
+  void logEvent({ userId: c.get('userId'), action: 'grant_revoked', targetId: id })
+  void emitWebhookEvent({
+    event: 'grant_revoked',
+    timestamp: new Date().toISOString(),
+    meta: { grantId: id },
+  }, [grant.ownerTeamId])
   return c.json({ ok: true }, 200 as const)
 })
 
@@ -550,8 +570,17 @@ adminRouter.openapi(createRoute({
   if (!isSuperAdmin(c)) return c.json({ error: 'Forbidden' }, 403 as const)
   const { id } = c.req.valid('param')
   const body = c.req.valid('json')
+  const { isActive } = body
   const result = await db.update(users).set(body).where(eq(users.id, id)).returning({ id: users.id })
   if (!result.length) return c.json({ error: 'User not found' }, 404 as const)
+  if (isActive === false) {
+    void logEvent({ userId: c.get('userId'), action: 'user_disabled', targetId: id })
+    void emitWebhookEvent({
+      event: 'user_disabled',
+      timestamp: new Date().toISOString(),
+      meta: { targetUserId: id },
+    }, [])
+  }
   return c.json({ ok: true }, 200 as const)
 })
 
