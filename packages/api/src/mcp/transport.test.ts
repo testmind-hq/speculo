@@ -3,7 +3,7 @@ import { Hono } from 'hono'
 
 vi.mock('../db/index.js', () => ({ db: {} }))
 vi.mock('./server.js', () => ({
-  mcpServer: { connect: vi.fn(), close: vi.fn() },
+  createMcpServer: vi.fn(() => ({ connect: vi.fn() })),
 }))
 vi.mock('bcryptjs', () => ({
   default: {

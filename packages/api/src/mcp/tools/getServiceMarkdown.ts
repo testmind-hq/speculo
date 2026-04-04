@@ -5,7 +5,10 @@ import { createMarkdownFromOpenApi } from '@scalar/openapi-to-markdown'
 import { db } from '../../db/index.js'
 import { services, specVersions } from '../../db/schema.js'
 
-export function getServiceMarkdownTool(server: McpServer) {
+export function getServiceMarkdownTool(
+  server: McpServer,
+  canAccess: (service: string, branch?: string) => Promise<boolean>,
+) {
   server.tool(
     'get_service_markdown',
     '获取整个服务的 LLM 友好 Markdown 概览。适合快速了解一个服务有哪些接口和能力，再用 search_endpoints 做精准检索。',
@@ -14,6 +17,10 @@ export function getServiceMarkdownTool(server: McpServer) {
       branch: z.string().default('main').describe('分支名'),
     },
     async ({ service, branch }) => {
+      if (!await canAccess(service, branch)) {
+        return { isError: true, content: [{ type: 'text' as const, text: `Access denied: ${service}` }] }
+      }
+
       const [row] = await db
         .select({ specContent: specVersions.specContent })
         .from(specVersions)
