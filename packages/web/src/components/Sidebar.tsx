@@ -24,8 +24,6 @@ import { Separator } from '@/components/ui/separator'
 import { useTheme } from '@/components/ThemeProvider'
 import { api } from '@/lib/api'
 
-export { SERVICE_PALETTE_HEX, serviceColorIndex } from '@/lib/serviceColors'
-
 type NavItem = {
   icon: React.ReactNode
   label: string
@@ -69,14 +67,15 @@ export default function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
-  const role = localStorage.getItem('speculo_role') ?? ''
+
+  const [email, setEmail] = useState('')
+  const [role, setRole] = useState('')
   const isSuperAdmin = role === 'super_admin'
   const isTeamOwner = role === 'team_owner'
   const hasAdminSection = isSuperAdmin || isTeamOwner
 
-  const [email, setEmail] = useState('')
   useEffect(() => {
-    api.me().then(me => setEmail(me.email)).catch(() => {})
+    api.me().then(me => { setEmail(me.email); setRole(me.role ?? '') }).catch(() => {})
   }, [])
 
   async function logout() {

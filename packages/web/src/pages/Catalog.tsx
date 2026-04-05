@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { SERVICE_PALETTE_HEX, serviceColorIndex } from '@/components/Sidebar'
+import { SERVICE_PALETTE_HEX, serviceColorIndex } from '@/lib/serviceColors'
 
 type Branch = { branch: string; endpointCount: number; uploadedAt: string }
 type Service = {
@@ -147,8 +147,11 @@ export default function Catalog() {
         return (
           <div key={svc.id} className="rounded-xl border border-border bg-card">
             {/* Header row */}
-            <button
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => toggleExpanded(svc.id)}
+              onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') toggleExpanded(svc.id) }}
               className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-muted/40 transition-colors rounded-xl"
             >
               <span className="text-muted-foreground text-xs">{isOpen ? '▼' : '▶'}</span>
@@ -179,7 +182,7 @@ export default function Catalog() {
                   <Trash2 size={13} />
                 </button>
               )}
-            </button>
+            </div>
 
             {/* Branch rows */}
             {isOpen && (
