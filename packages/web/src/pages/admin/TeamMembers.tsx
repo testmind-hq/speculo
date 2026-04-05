@@ -103,8 +103,8 @@ export default function TeamMembers() {
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="member">Member</SelectItem>
-            <SelectItem value="owner">Owner</SelectItem>
+            <SelectItem value="member">{t('admin.teamMembers.roleMember')}</SelectItem>
+            <SelectItem value="owner">{t('admin.teamMembers.roleOwner')}</SelectItem>
           </SelectContent>
         </Select>
         <Button type="submit" disabled={adding || !userId.trim()}>
@@ -117,7 +117,7 @@ export default function TeamMembers() {
           <TableRow>
             <TableHead>{t('admin.teamMembers.emailHead')}</TableHead>
             <TableHead>{t('admin.teamMembers.roleHead')}</TableHead>
-            <TableHead>Joined</TableHead>
+            <TableHead>{t('admin.teamMembers.joinedHead')}</TableHead>
             <TableHead>{t('admin.teamMembers.actionsHead')}</TableHead>
           </TableRow>
         </TableHeader>
@@ -131,8 +131,8 @@ export default function TeamMembers() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="owner">Owner</SelectItem>
-                    <SelectItem value="member">Member</SelectItem>
+                    <SelectItem value="owner">{t('admin.teamMembers.roleOwner')}</SelectItem>
+                    <SelectItem value="member">{t('admin.teamMembers.roleMember')}</SelectItem>
                   </SelectContent>
                 </Select>
               </TableCell>
@@ -146,7 +146,7 @@ export default function TeamMembers() {
           ))}
           {members.length === 0 && (
             <TableRow>
-              <TableCell colSpan={4} className="text-center text-muted-foreground">No members yet.</TableCell>
+              <TableCell colSpan={4} className="text-center text-muted-foreground">{t('admin.teamMembers.noMembers')}</TableCell>
             </TableRow>
           )}
         </TableBody>

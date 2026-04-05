@@ -203,7 +203,7 @@ export default function Diff() {
                   <SelectContent>
                     {versions.map(v => (
                       <SelectItem key={v.id} value={v.id}>
-                        {new Date(v.uploadedAt).toLocaleString()} — {v.commitSha ?? 'no commit'}
+                        {new Date(v.uploadedAt).toLocaleString()} — {v.commitSha ?? t('diff.noCommit')}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -218,7 +218,7 @@ export default function Diff() {
                   <SelectContent>
                     {versions.map(v => (
                       <SelectItem key={v.id} value={v.id}>
-                        {new Date(v.uploadedAt).toLocaleString()} — {v.commitSha ?? 'no commit'}
+                        {new Date(v.uploadedAt).toLocaleString()} — {v.commitSha ?? t('diff.noCommit')}
                       </SelectItem>
                     ))}
                   </SelectContent>

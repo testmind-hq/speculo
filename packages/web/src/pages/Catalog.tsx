@@ -196,7 +196,7 @@ export default function Catalog() {
                     <span className="text-muted-foreground text-xs font-mono shrink-0">└──</span>
                     <span className="text-foreground font-mono text-xs">{b.branch}</span>
                     {isDefault && (
-                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">default</Badge>
+                      <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">{t('catalog.defaultBadge')}</Badge>
                     )}
                     <span className="flex-1" />
                     <span className="text-xs text-muted-foreground">{t('catalog.endpointCount', { count: b.endpointCount })}</span>

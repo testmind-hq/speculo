@@ -99,7 +99,7 @@ export default function AdminTeams() {
               <TableCell className="text-muted-foreground">{team.displayName ?? '—'}</TableCell>
               <TableCell>
                 {team.isDefault
-                  ? <Badge variant="secondary">default</Badge>
+                  ? <Badge variant="secondary">{tr('admin.teams.defaultBadge')}</Badge>
                   : <span className="text-muted-foreground">—</span>}
               </TableCell>
               <TableCell>

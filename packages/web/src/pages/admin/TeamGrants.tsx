@@ -115,11 +115,11 @@ export default function TeamGrants() {
 
       {tab === 'out' && (
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <p className="text-sm font-medium">New Grant</p>
+          <p className="text-sm font-medium">{t('admin.teamGrants.newGrant')}</p>
           <form onSubmit={createGrant} className="flex flex-wrap gap-2">
             <Select value={newServiceId} onValueChange={setNewServiceId}>
               <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Select service…" />
+                <SelectValue placeholder={t('admin.teamGrants.selectServicePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
@@ -139,7 +139,7 @@ export default function TeamGrants() {
             {granteeType === 'team' ? (
               <Select value={granteeTeamId} onValueChange={setGranteeTeamId}>
                 <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Select team…" />
+                  <SelectValue placeholder={t('admin.teamGrants.selectTeamPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
                   {teams.map(tm => <SelectItem key={tm.id} value={tm.id}>{tm.name}</SelectItem>)}
@@ -183,7 +183,7 @@ export default function TeamGrants() {
             size="sm"
             onClick={() => setTab(tabKey)}
           >
-            {tabKey === 'out' ? `Outgoing (${outgoing.length})` : `Incoming (${incoming.length})`}
+            {tabKey === 'out' ? t('admin.teamGrants.outgoing', { count: outgoing.length }) : t('admin.teamGrants.incoming', { count: incoming.length })}
           </Button>
         ))}
       </div>
@@ -205,16 +205,16 @@ export default function TeamGrants() {
               <TableCell className="text-muted-foreground">
                 {tab === 'out'
                   ? (g.granteeTeamId
-                    ? <span className="text-blue-400">Team: {teams.find(tm => tm.id === g.granteeTeamId)?.name ?? g.granteeTeamId}</span>
-                    : <span className="text-green-400">User: {g.granteeUserId}</span>)
+                    ? <span className="text-blue-400">{t('admin.teamGrants.tabTeam')} {teams.find(tm => tm.id === g.granteeTeamId)?.name ?? g.granteeTeamId}</span>
+                    : <span className="text-green-400">{t('admin.teamGrants.tabUser')} {g.granteeUserId}</span>)
                   : g.ownerTeamId
                 }
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">
-                {g.branches?.length ? g.branches.join(', ') : <span className="text-muted-foreground/50">all</span>}
+                {g.branches?.length ? g.branches.join(', ') : <span className="text-muted-foreground/50">{t('admin.teamGrants.allBranches')}</span>}
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">
-                {g.expiresAt ? new Date(g.expiresAt).toLocaleDateString() : <span className="text-muted-foreground/50">never</span>}
+                {g.expiresAt ? new Date(g.expiresAt).toLocaleDateString() : <span className="text-muted-foreground/50">{t('admin.teamGrants.noExpiry')}</span>}
               </TableCell>
               {tab === 'out' && (
                 <TableCell>

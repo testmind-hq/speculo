@@ -118,7 +118,7 @@ export default function AuditLogs() {
                 <TableHead>{t('admin.auditLogs.actionHead')}</TableHead>
                 <TableHead>{t('admin.auditLogs.userHead')}</TableHead>
                 <TableHead>{t('admin.auditLogs.targetHead')}</TableHead>
-                <TableHead>Details</TableHead>
+                <TableHead>{t('admin.auditLogs.detailsHead')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -155,8 +155,8 @@ export default function AuditLogs() {
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
               {total === 0
-                ? 'No results'
-                : `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total}`}
+                ? t('admin.auditLogs.noResults')
+                : t('admin.auditLogs.showingRange', { from: (page - 1) * PAGE_SIZE + 1, to: Math.min(page * PAGE_SIZE, total), total })}
             </span>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>

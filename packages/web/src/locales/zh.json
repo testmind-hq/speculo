@@ -53,7 +53,8 @@
     "deletedSuccess": "已删除 \"{{name}}\"",
     "deleteFailed": "删除失败",
     "deleteAction": "删除",
-    "deleting": "删除中…"
+    "deleting": "删除中…",
+    "defaultBadge": "默认"
   },
   "import": {
     "title": "导入 Spec",
@@ -112,7 +113,8 @@
     "noDiff": "未发现差异",
     "added": "新增 ({{count}})",
     "removed": "删除 ({{count}})",
-    "modified": "修改 ({{count}})"
+    "modified": "修改 ({{count}})",
+    "noCommit": "无提交记录"
   },
   "admin": {
     "teams": {
@@ -130,7 +132,8 @@
       "deleteConfirm": "确定删除团队 \"{{name}}\"？此操作无法撤销。",
       "cancel": "取消",
       "deleting": "删除中…",
-      "delete": "删除"
+      "delete": "删除",
+      "defaultBadge": "默认"
     },
     "users": {
       "title": "用户",
@@ -164,7 +167,11 @@
       "removeConfirm": "确定将 \"{{email}}\" 从该团队移除？",
       "cancel": "取消",
       "removing": "移除中…",
-      "remove": "移除"
+      "remove": "移除",
+      "joinedHead": "加入时间",
+      "noMembers": "暂无成员。",
+      "roleMember": "成员",
+      "roleOwner": "所有者"
     },
     "teamServices": {
       "backToTeams": "← 团队",
@@ -203,7 +210,14 @@
       "branchesLabel": "分支（逗号分隔，留空表示全部）",
       "expiresLabel": "过期时间",
       "grantButton": "授权",
-      "granting": "授权中…"
+      "granting": "授权中…",
+      "newGrant": "新建授权",
+      "selectServicePlaceholder": "选择服务…",
+      "selectTeamPlaceholder": "选择团队…",
+      "outgoing": "外发 ({{count}})",
+      "incoming": "传入 ({{count}})",
+      "allBranches": "全部",
+      "noExpiry": "永不过期"
     },
     "auditLogs": {
       "title": "审计日志",
@@ -220,7 +234,10 @@
       "nextPage": "下一页 →",
       "pageInfo": "第 {{page}} 页，共 {{total}} 页",
       "noLogs": "未找到日志。",
-      "loadFailed": "加载审计日志失败"
+      "loadFailed": "加载审计日志失败",
+      "detailsHead": "详情",
+      "noResults": "无结果",
+      "showingRange": "显示 {{from}}–{{to}} 条，共 {{total}} 条"
     },
     "webhooks": {
       "title": "Webhooks",
@@ -239,7 +256,6 @@
       "urlHead": "URL",
       "providerHead": "提供商",
       "eventsHead": "事件",
-      "scopeHead": "范围",
       "activeHead": "状态",
       "actionsHead": "操作",
       "activeStatus": "已启用",

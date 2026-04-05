@@ -53,7 +53,8 @@
     "deletedSuccess": "Deleted \"{{name}}\"",
     "deleteFailed": "Delete failed",
     "deleteAction": "Delete",
-    "deleting": "Deleting…"
+    "deleting": "Deleting…",
+    "defaultBadge": "default"
   },
   "import": {
     "title": "Import Spec",
@@ -112,7 +113,8 @@
     "noDiff": "No differences found",
     "added": "Added ({{count}})",
     "removed": "Removed ({{count}})",
-    "modified": "Modified ({{count}})"
+    "modified": "Modified ({{count}})",
+    "noCommit": "no commit"
   },
   "admin": {
     "teams": {
@@ -130,7 +132,8 @@
       "deleteConfirm": "Delete team \"{{name}}\"? This cannot be undone.",
       "cancel": "Cancel",
       "deleting": "Deleting…",
-      "delete": "Delete"
+      "delete": "Delete",
+      "defaultBadge": "default"
     },
     "users": {
       "title": "Users",
@@ -164,7 +167,11 @@
       "removeConfirm": "Remove \"{{email}}\" from this team?",
       "cancel": "Cancel",
       "removing": "Removing…",
-      "remove": "Remove"
+      "remove": "Remove",
+      "joinedHead": "Joined",
+      "noMembers": "No members yet.",
+      "roleMember": "Member",
+      "roleOwner": "Owner"
     },
     "teamServices": {
       "backToTeams": "← Teams",
@@ -203,7 +210,14 @@
       "branchesLabel": "Branches (comma-separated, blank = all)",
       "expiresLabel": "Expires at",
       "grantButton": "Grant",
-      "granting": "Granting…"
+      "granting": "Granting…",
+      "newGrant": "New Grant",
+      "selectServicePlaceholder": "Select service…",
+      "selectTeamPlaceholder": "Select team…",
+      "outgoing": "Outgoing ({{count}})",
+      "incoming": "Incoming ({{count}})",
+      "allBranches": "all",
+      "noExpiry": "never"
     },
     "auditLogs": {
       "title": "Audit Logs",
@@ -220,7 +234,10 @@
       "nextPage": "Next →",
       "pageInfo": "Page {{page}} of {{total}}",
       "noLogs": "No logs found.",
-      "loadFailed": "Failed to load audit logs"
+      "loadFailed": "Failed to load audit logs",
+      "detailsHead": "Details",
+      "noResults": "No results",
+      "showingRange": "Showing {{from}}–{{to}} of {{total}}"
     },
     "webhooks": {
       "title": "Webhooks",
@@ -239,7 +256,6 @@
       "urlHead": "URL",
       "providerHead": "Provider",
       "eventsHead": "Events",
-      "scopeHead": "Scope",
       "activeHead": "Active",
       "actionsHead": "Actions",
       "activeStatus": "Active",
