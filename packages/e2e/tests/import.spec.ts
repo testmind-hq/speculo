@@ -40,7 +40,7 @@ test('submit without a file shows error', async ({ page }) => {
   await page.fill('#branch', 'main')
   // Deliberately skip file attachment
   await page.click('button[type=submit]')
-  await expect(page.getByRole('alert')).toBeVisible()  // HTML5 required or JS error alert
+  await expect(page.getByTestId('upload-error-alert')).toBeVisible({ timeout: 5_000 })
 })
 
 test('uploaded service appears in catalog', async ({ page, request }) => {

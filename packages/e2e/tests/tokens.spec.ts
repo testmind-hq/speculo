@@ -65,7 +65,7 @@ test('create a write token', async ({ page }) => {
 test('revoke a token removes it from the list', async ({ page }) => {
   await page.goto('/settings/tokens')
 
-  await page.fill('input[placeholder*="Token name" i]', TOKEN_REVOKE)
+  await page.getByTestId('token-name-input').fill(TOKEN_REVOKE)
   await page.getByRole('button', { name: /^create$/i }).click()
   await expect(page.getByRole('row').filter({ hasText: TOKEN_REVOKE })).toBeVisible({ timeout: 10_000 })
 

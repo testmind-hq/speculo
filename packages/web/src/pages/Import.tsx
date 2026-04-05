@@ -101,7 +101,7 @@ export default function Import() {
         </div>
 
         {error && (
-          <Alert variant="destructive">
+          <Alert variant="destructive" data-testid="upload-error-alert">
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
