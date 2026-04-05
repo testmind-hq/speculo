@@ -26,6 +26,10 @@ export const uploadAuth: MiddlewareHandler = async (c, next) => {
   try {
     const payload = await verify(token, env.JWT_SECRET, 'HS256')
     if (typeof payload.userId !== 'string') throw new Error('bad payload')
+    const role = typeof payload.role === 'string' ? payload.role : ''
+    if (role !== 'super_admin' && role !== 'team_owner') {
+      return c.json({ error: 'Forbidden: upload requires team_owner or super_admin role' }, 403)
+    }
     c.set('userId', payload.userId)
     return await next()
   } catch {

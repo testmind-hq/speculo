@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { api, type User } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table'
@@ -23,6 +25,10 @@ export default function AdminUsers() {
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [currentUserId, setCurrentUserId] = useState('')
+  const [showCreate, setShowCreate] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [creating, setCreating] = useState(false)
 
   async function load() {
     try {
@@ -56,6 +62,22 @@ export default function AdminUsers() {
     }
   }
 
+  async function createUser(e: React.FormEvent) {
+    e.preventDefault()
+    setCreating(true)
+    try {
+      await api.register(newEmail.trim(), newPassword)
+      setNewEmail('')
+      setNewPassword('')
+      setShowCreate(false)
+      await load()
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setCreating(false)
+    }
+  }
+
   async function confirmDelete() {
     if (!deleteTarget) return
     setDeleting(true)
@@ -74,7 +96,10 @@ export default function AdminUsers() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">{t('admin.users.title')}</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{t('admin.users.title')}</h1>
+        <Button size="sm" onClick={() => setShowCreate(true)}>{t('admin.users.createButton')}</Button>
+      </div>
 
       {error && <p className="text-destructive text-sm">{error}</p>}
 
@@ -129,6 +154,28 @@ export default function AdminUsers() {
           ))}
         </TableBody>
       </Table>
+
+      <Dialog open={showCreate} onOpenChange={open => { if (!open) { setShowCreate(false); setNewEmail(''); setNewPassword('') } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.users.createTitle')}</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={createUser} className="space-y-4">
+            <div className="space-y-1.5">
+              <Label>{t('admin.users.createEmailLabel')}</Label>
+              <Input type="email" required value={newEmail} onChange={e => setNewEmail(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('admin.users.createPasswordLabel')}</Label>
+              <Input type="password" required minLength={8} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setShowCreate(false)} disabled={creating}>{t('admin.users.cancel')}</Button>
+              <Button type="submit" disabled={creating}>{creating ? t('admin.users.creating') : t('admin.users.create')}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null) }}>
         <DialogContent>
