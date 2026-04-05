@@ -69,6 +69,9 @@ app.doc('/openapi.json', {
 // Scalar UI
 app.get('/api-docs', Scalar({ url: '/openapi.json', theme: 'purple' }))
 
+// Health check — returns 200 once the server is up (startup/migrations are done)
+app.get('/health', (c) => c.json({ status: 'ok' }))
+
 // Serve React SPA static files (production build at ./public)
 app.use('*', serveStatic({ root: './public' }))
 app.use('*', serveStatic({ path: 'index.html', root: './public' }))
