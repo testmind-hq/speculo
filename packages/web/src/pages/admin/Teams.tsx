@@ -106,7 +106,7 @@ export default function AdminTeams() {
                   <Link to={`/admin/teams/${t.id}/services`} className="text-violet-400 hover:text-violet-300">Services</Link>
                   <Link to={`/admin/teams/${t.id}/grants`} className="text-violet-400 hover:text-violet-300">Grants</Link>
                   {t.isDeletable && (
-                    <button onClick={() => setDeleteTarget(t)} className="text-destructive hover:text-destructive/80">Delete</button>
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(t)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">Delete</Button>
                   )}
                 </div>
               </TableCell>

@@ -20,6 +20,7 @@ export default function AdminUsers() {
   const [error, setError] = useState('')
   const [deleteTarget, setDeleteTarget] = useState<User | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState('')
 
   async function load() {
     try {
@@ -33,6 +34,7 @@ export default function AdminUsers() {
   }
 
   useEffect(() => { load() }, [])
+  useEffect(() => { api.me().then(me => setCurrentUserId(me.id)).catch(() => {}) }, [])
 
   async function updateRole(id: string, role: string) {
     try {
@@ -90,7 +92,7 @@ export default function AdminUsers() {
               <TableCell>{u.email}</TableCell>
               <TableCell>
                 <Select value={u.role} onValueChange={v => updateRole(u.id, v)}>
-                  <SelectTrigger className="h-7 w-[130px] text-xs">
+                  <SelectTrigger className="h-7 w-[130px] text-xs" disabled={u.id === currentUserId}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -101,7 +103,7 @@ export default function AdminUsers() {
               <TableCell>
                 {u.teams.length > 0
                   ? u.teams.map(t => (
-                    <Badge key={t.id} variant="secondary" className="mr-1 text-xs">{t.name}</Badge>
+                    <Badge key={t.id} variant="secondary" className="mr-1 text-xs">{t.name} ({t.role})</Badge>
                   ))
                   : <span className="text-muted-foreground">—</span>
                 }
@@ -113,18 +115,12 @@ export default function AdminUsers() {
               </TableCell>
               <TableCell>
                 <div className="flex gap-3 text-xs">
-                  <button
-                    onClick={() => toggleActive(u.id, u.isActive)}
-                    className="text-amber-500 hover:text-amber-400"
-                  >
+                  <Button variant="ghost" size="sm" onClick={() => toggleActive(u.id, u.isActive)} className="h-auto p-0 text-xs text-amber-500 hover:text-amber-400 hover:bg-transparent">
                     {u.isActive ? 'Disable' : 'Enable'}
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(u)}
-                    className="text-destructive hover:text-destructive/80"
-                  >
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(u)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>
