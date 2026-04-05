@@ -1,6 +1,10 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { api } from '../lib/api.js'
+import { api } from '@/lib/api'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function Import() {
   const [service, setService] = useState('')
@@ -42,51 +46,82 @@ export default function Import() {
   }
 
   return (
-    <div className="max-w-lg">
-      <h1 className="text-2xl font-semibold mb-6">Import API Spec</h1>
+    <div className="max-w-lg space-y-6">
+      <div>
+        <h1 className="text-2xl font-semibold">导入 Spec</h1>
+        <p className="mt-1 text-sm text-muted-foreground">上传 OpenAPI YAML 或 JSON 文件</p>
+      </div>
+
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="mb-1 block text-sm text-gray-400">Service name</label>
-          <input value={service} onChange={e => setService(e.target.value)} required
+        <div className="space-y-1.5">
+          <Label htmlFor="service">Service name</Label>
+          <Input
+            id="service"
+            value={service}
+            onChange={e => setService(e.target.value)}
+            required
             placeholder="user-service"
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500" />
+          />
         </div>
-        <div>
-          <label className="mb-1 block text-sm text-gray-400">Branch</label>
-          <input value={branch} onChange={e => setBranch(e.target.value)} required
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500" />
+        <div className="space-y-1.5">
+          <Label htmlFor="branch">Branch</Label>
+          <Input
+            id="branch"
+            value={branch}
+            onChange={e => setBranch(e.target.value)}
+            required
+            placeholder="main"
+          />
         </div>
+
         <div
-          onDrop={onDrop} onDragOver={e => e.preventDefault()}
+          onDrop={onDrop}
+          onDragOver={e => e.preventDefault()}
           onClick={() => fileInput.current?.click()}
-          className="cursor-pointer rounded-xl border-2 border-dashed border-gray-700 p-10 text-center hover:border-purple-500"
+          className="cursor-pointer rounded-xl border-2 border-dashed border-border p-10 text-center transition-colors hover:border-violet-500"
         >
-          <input ref={fileInput} type="file" accept=".yaml,.yml,.json" className="hidden"
-            onChange={e => setFile(e.target.files?.[0] ?? null)} />
+          <input
+            ref={fileInput}
+            type="file"
+            accept=".yaml,.yml,.json"
+            className="hidden"
+            onChange={e => setFile(e.target.files?.[0] ?? null)}
+          />
           {file ? (
-            <p className="text-sm text-purple-400">{file.name}</p>
+            <p className="text-sm text-violet-400">{file.name}</p>
           ) : (
-            <p className="text-sm text-gray-500">Drop openapi.yaml / openapi.json here<br />or click to select</p>
+            <p className="text-sm text-muted-foreground">
+              Drop openapi.yaml / openapi.json here
+              <br />or click to select
+            </p>
           )}
         </div>
 
-        {error && <p className="text-sm text-red-400">{error}</p>}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
         {result && (
-          <div className="rounded-lg border border-green-800 bg-green-950 p-3 text-sm text-green-400">
-            ✓ Uploaded — {result.endpointCount} endpoints{result.wasConverted ? ' (converted from Swagger 2.0)' : ''}
-            {result.warnings.length > 0 && <p className="mt-1 text-yellow-400">{result.warnings.join(', ')}</p>}
-          </div>
+          <Alert className="border-green-700 bg-green-950/50 text-green-400">
+            <AlertDescription>
+              ✓ Uploaded — {result.endpointCount} endpoints
+              {result.wasConverted ? ' (converted from Swagger 2.0)' : ''}
+              {result.warnings.length > 0 && (
+                <span className="block mt-1 text-yellow-400">{result.warnings.join(', ')}</span>
+              )}
+            </AlertDescription>
+          </Alert>
         )}
 
         <div className="flex gap-3">
-          <button type="button" onClick={() => navigate('/')}
-            className="flex-1 rounded-lg border border-gray-700 py-2 text-sm text-gray-400 hover:text-white">
+          <Button type="button" variant="outline" onClick={() => navigate('/')} className="flex-1">
             Cancel
-          </button>
-          <button type="submit" disabled={loading}
-            className="flex-1 rounded-lg bg-purple-600 py-2 text-sm font-medium text-white hover:bg-purple-500 disabled:opacity-50">
+          </Button>
+          <Button type="submit" disabled={loading} className="flex-1">
             {loading ? 'Uploading…' : 'Upload'}
-          </button>
+          </Button>
         </div>
       </form>
     </div>
