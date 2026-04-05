@@ -38,6 +38,7 @@ export default function Tokens() {
 
   async function create(e: React.FormEvent) {
     e.preventDefault()
+    setError('')
     try {
       const t = await api.tokens.create(name, scope)
       setNewToken(t.token)
@@ -50,8 +51,12 @@ export default function Tokens() {
   }
 
   async function revoke(id: string) {
-    await api.tokens.delete(id)
-    load()
+    try {
+      await api.tokens.delete(id)
+      load()
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Revoke failed')
+    }
   }
 
   const mcpConfig = newToken ? JSON.stringify({
