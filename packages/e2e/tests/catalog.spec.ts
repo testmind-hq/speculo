@@ -56,6 +56,12 @@ test('admin can delete a service from the catalog', async ({ page, request }) =>
   // Confirm deletion in dialog
   await page.getByRole('dialog').getByRole('button', { name: /^delete$/i }).click()
 
-  // Service should be removed from the catalog
-  await expect(page.getByText(THROWAWAY)).not.toBeVisible({ timeout: 10_000 })
+  // Wait for the dialog to close (deletion API call completes)
+  await expect(page.getByRole('dialog')).not.toBeVisible({ timeout: 10_000 })
+
+  // Service card should be gone from the catalog
+  // Use the header-row locator to avoid matching dialog text if dialog lingers
+  await expect(
+    page.locator('[role="button"]').filter({ has: page.getByText(THROWAWAY, { exact: true }) })
+  ).not.toBeVisible({ timeout: 10_000 })
 })
