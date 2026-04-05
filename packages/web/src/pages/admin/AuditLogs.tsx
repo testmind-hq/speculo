@@ -1,18 +1,20 @@
 import { useEffect, useState } from 'react'
-import { api, AuditLog } from '../../lib/api.js'
+import { api, AuditLog } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
 
 const ACTION_TYPES = [
-  'login',
-  'spec_uploaded',
-  'spec_updated',
-  'service_deleted',
-  'grant_created',
-  'grant_revoked',
-  'token_created',
-  'token_revoked',
-  'user_created',
-  'user_disabled',
-  'team_created',
+  'login', 'spec_uploaded', 'spec_updated', 'service_deleted',
+  'grant_created', 'grant_revoked', 'token_created', 'token_revoked',
+  'user_created', 'user_disabled', 'team_created',
 ]
 
 const PAGE_SIZE = 50
@@ -24,12 +26,9 @@ export default function AuditLogs() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Filter state
   const [actionFilter, setActionFilter] = useState('')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
-
-  // Applied filters (only updated on Apply click)
   const [appliedAction, setAppliedAction] = useState('')
   const [appliedFrom, setAppliedFrom] = useState('')
   const [appliedTo, setAppliedTo] = useState('')
@@ -44,10 +43,7 @@ export default function AuditLogs() {
       ...(from ? { from } : {}),
       ...(to ? { to } : {}),
     })
-      .then(d => {
-        setLogs(d.logs)
-        setTotal(d.total)
-      })
+      .then(d => { setLogs(d.logs); setTotal(d.total) })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load audit logs'))
       .finally(() => setLoading(false))
   }
@@ -63,21 +59,12 @@ export default function AuditLogs() {
     setAppliedTo(toDate)
   }
 
-  function handlePrev() {
-    if (page > 1) setPage(p => p - 1)
-  }
-
-  function handleNext() {
-    if (page * PAGE_SIZE < total) setPage(p => p + 1)
-  }
-
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
 
   function formatMeta(meta: string | null): string {
     if (!meta) return '—'
     try {
-      const parsed = JSON.parse(meta)
-      const str = JSON.stringify(parsed)
+      const str = JSON.stringify(JSON.parse(meta))
       return str.length > 80 ? str.slice(0, 77) + '…' : str
     } catch {
       return meta.length > 80 ? meta.slice(0, 77) + '…' : meta
@@ -89,124 +76,94 @@ export default function AuditLogs() {
       <h1 className="text-2xl font-semibold">Audit Logs</h1>
 
       {/* Filter bar */}
-      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-gray-800 bg-gray-900 px-4 py-3">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400">Action</label>
-          <select
-            value={actionFilter}
-            onChange={e => setActionFilter(e.target.value)}
-            className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500"
-          >
-            <option value="">All</option>
-            {ACTION_TYPES.map(a => (
-              <option key={a} value={a}>{a}</option>
-            ))}
-          </select>
+      <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card px-4 py-3">
+        <div className="space-y-1">
+          <Label className="text-xs">Action</Label>
+          <Select value={actionFilter} onValueChange={setActionFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="All" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">All</SelectItem>
+              {ACTION_TYPES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
+            </SelectContent>
+          </Select>
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400">From</label>
-          <input
-            type="date"
-            value={fromDate}
-            onChange={e => setFromDate(e.target.value)}
-            className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500"
-          />
+        <div className="space-y-1">
+          <Label className="text-xs">From</Label>
+          <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="w-36" />
         </div>
 
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-gray-400">To</label>
-          <input
-            type="date"
-            value={toDate}
-            onChange={e => setToDate(e.target.value)}
-            className="rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white outline-none focus:border-purple-500"
-          />
+        <div className="space-y-1">
+          <Label className="text-xs">To</Label>
+          <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="w-36" />
         </div>
 
-        <button
-          onClick={handleApply}
-          className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500"
-        >
-          Apply
-        </button>
+        <Button onClick={handleApply}>Apply</Button>
       </div>
 
-      {error && <p className="text-sm text-red-400">{error}</p>}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-gray-400">Loading...</p>
+        <p className="text-sm text-muted-foreground">Loading...</p>
       ) : (
         <>
-          <div className="overflow-x-auto rounded-xl border border-gray-800">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-gray-800 bg-gray-900 text-left text-xs text-gray-400">
-                  <th className="px-4 py-3 font-medium">Timestamp</th>
-                  <th className="px-4 py-3 font-medium">Action</th>
-                  <th className="px-4 py-3 font-medium">Actor</th>
-                  <th className="px-4 py-3 font-medium">Target</th>
-                  <th className="px-4 py-3 font-medium">Details</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logs.map(log => (
-                  <tr key={log.id} className="border-b border-gray-800 bg-gray-950 hover:bg-gray-900">
-                    <td className="px-4 py-3 text-gray-300 whitespace-nowrap">
-                      {new Date(log.createdAt).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="rounded-full bg-gray-800 px-2 py-0.5 text-xs text-gray-300">
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-gray-300">
-                      {log.userEmail ?? <span className="text-gray-600">—</span>}
-                    </td>
-                    <td className="px-4 py-3 text-gray-300">
-                      {log.targetName ?? <span className="text-gray-600">—</span>}
-                    </td>
-                    <td className="px-4 py-3 font-mono text-xs text-gray-500 max-w-xs truncate">
-                      {formatMeta(log.meta)}
-                    </td>
-                  </tr>
-                ))}
-                {!logs.length && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-6 text-center text-sm text-gray-600">
-                      No audit log entries found.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Timestamp</TableHead>
+                <TableHead>Action</TableHead>
+                <TableHead>Actor</TableHead>
+                <TableHead>Target</TableHead>
+                <TableHead>Details</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {logs.map(log => (
+                <TableRow key={log.id}>
+                  <TableCell className="whitespace-nowrap text-sm">
+                    {new Date(log.createdAt).toLocaleString()}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="text-xs">{log.action}</Badge>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {log.userEmail ?? <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {log.targetName ?? <span className="text-muted-foreground">—</span>}
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground max-w-xs truncate">
+                    {formatMeta(log.meta)}
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!logs.length && (
+                <TableRow>
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
+                    No audit log entries found.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between text-sm text-gray-400">
+          <div className="flex items-center justify-between text-sm text-muted-foreground">
             <span>
               {total === 0
                 ? 'No results'
                 : `Showing ${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} of ${total}`}
             </span>
-            <div className="flex gap-2">
-              <button
-                onClick={handlePrev}
-                disabled={page <= 1}
-                className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>
                 Previous
-              </button>
-              <span className="px-2 py-1.5">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                onClick={handleNext}
-                disabled={page * PAGE_SIZE >= total}
-                className="rounded-lg border border-gray-700 px-3 py-1.5 text-sm hover:bg-gray-800 disabled:opacity-40 disabled:cursor-not-allowed"
-              >
+              </Button>
+              <span>Page {page} of {totalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page * PAGE_SIZE >= total}>
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         </>
