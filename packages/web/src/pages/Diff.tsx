@@ -1,5 +1,16 @@
 import { useState } from 'react'
-import { api, type SpecVersion, type DiffResult } from '../lib/api.js'
+import { api, type SpecVersion, type DiffResult } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 type Mode = 'branch' | 'history'
 
@@ -45,10 +56,7 @@ export default function Diff() {
   }
 
   async function handleCompare() {
-    if (!service.trim()) {
-      setError('Please enter a service name.')
-      return
-    }
+    if (!service.trim()) { setError('Please enter a service name.'); return }
     setLoading(true)
     setError(null)
     setResult(null)
@@ -62,7 +70,6 @@ export default function Diff() {
           setLoading(false)
           return
         }
-        // Load latest version ID for each branch
         const [fromData, toData] = await Promise.all([
           api.diff.versions(service.trim(), fromBranch.trim()),
           api.diff.versions(service.trim(), toBranch.trim()),
@@ -80,7 +87,6 @@ export default function Diff() {
         from = fromData.versions[0].id
         to = toData.versions[0].id
       } else {
-        // History mode
         if (!fromVersionId || !toVersionId) {
           setError('Please load versions and select both From and To versions.')
           setLoading(false)
@@ -110,13 +116,13 @@ export default function Diff() {
       <h1 className="text-2xl font-semibold">Spec Diff</h1>
 
       {/* Mode tabs */}
-      <div className="flex rounded-lg border border-gray-700 overflow-hidden w-fit">
+      <div className="flex rounded-lg border border-border overflow-hidden w-fit">
         <button
           onClick={() => { setMode('branch'); resetResult() }}
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             mode === 'branch'
-              ? 'bg-purple-700 text-white'
-              : 'bg-gray-900 text-gray-400 hover:text-white'
+              ? 'bg-violet-700 text-white'
+              : 'bg-card text-muted-foreground hover:text-foreground'
           }`}
         >
           Compare branches
@@ -125,8 +131,8 @@ export default function Diff() {
           onClick={() => { setMode('history'); resetResult() }}
           className={`px-4 py-2 text-sm font-medium transition-colors ${
             mode === 'history'
-              ? 'bg-purple-700 text-white'
-              : 'bg-gray-900 text-gray-400 hover:text-white'
+              ? 'bg-violet-700 text-white'
+              : 'bg-card text-muted-foreground hover:text-foreground'
           }`}
         >
           Version history
@@ -134,193 +140,170 @@ export default function Diff() {
       </div>
 
       {/* Inputs */}
-      <div className="rounded-xl border border-gray-800 bg-gray-900 p-5 space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">Service name</label>
-            <input
-              type="text"
-              value={service}
-              onChange={e => { setService(e.target.value); resetResult() }}
-              placeholder="e.g. user-service"
-              className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
-            />
+      <Card>
+        <CardContent className="pt-5 space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>Service name</Label>
+              <Input
+                value={service}
+                onChange={e => { setService(e.target.value); resetResult() }}
+                placeholder="e.g. user-service"
+              />
+            </div>
+
+            {mode === 'branch' ? (
+              <>
+                <div className="space-y-1.5">
+                  <Label>From branch</Label>
+                  <Input
+                    value={fromBranch}
+                    onChange={e => { setFromBranch(e.target.value); resetResult() }}
+                    placeholder="main"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>To branch</Label>
+                  <Input
+                    value={toBranch}
+                    onChange={e => { setToBranch(e.target.value); resetResult() }}
+                    placeholder="e.g. feature/my-feature"
+                  />
+                </div>
+              </>
+            ) : (
+              <div className="space-y-1.5">
+                <Label>Branch</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={toBranch}
+                    onChange={e => { setToBranch(e.target.value); resetResult(); setVersions([]) }}
+                    placeholder="e.g. main"
+                    className="flex-1"
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={handleLoadVersions}
+                    disabled={versionsLoading}
+                  >
+                    {versionsLoading ? 'Loading…' : 'Load versions'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
 
-          {mode === 'branch' ? (
-            <>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">From branch</label>
-                <input
-                  type="text"
-                  value={fromBranch}
-                  onChange={e => { setFromBranch(e.target.value); resetResult() }}
-                  placeholder="main"
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
-                />
+          {/* Version selectors (history mode) */}
+          {mode === 'history' && versions.length > 0 && (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
+              <div className="space-y-1.5">
+                <Label>From version</Label>
+                <Select value={fromVersionId ?? ''} onValueChange={v => setFromVersionId(v || null)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {versions.map(v => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {new Date(v.uploadedAt).toLocaleString()} — {v.commitSha ?? 'no commit'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">To branch</label>
-                <input
-                  type="text"
-                  value={toBranch}
-                  onChange={e => { setToBranch(e.target.value); resetResult() }}
-                  placeholder="e.g. feature/my-feature"
-                  className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
-                />
-              </div>
-            </>
-          ) : (
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">Branch</label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={toBranch}
-                  onChange={e => { setToBranch(e.target.value); resetResult(); setVersions([]) }}
-                  placeholder="e.g. main"
-                  className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
-                />
-                <button
-                  onClick={handleLoadVersions}
-                  disabled={versionsLoading}
-                  className="rounded-lg border border-gray-700 px-3 py-2 text-sm text-gray-300 hover:border-purple-500 hover:text-purple-400 disabled:opacity-50"
-                >
-                  {versionsLoading ? 'Loading…' : 'Load versions'}
-                </button>
+              <div className="space-y-1.5">
+                <Label>To version</Label>
+                <Select value={toVersionId ?? ''} onValueChange={v => setToVersionId(v || null)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {versions.map(v => (
+                      <SelectItem key={v.id} value={v.id}>
+                        {new Date(v.uploadedAt).toLocaleString()} — {v.commitSha ?? 'no commit'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           )}
-        </div>
 
-        {/* Version selectors (history mode) */}
-        {mode === 'history' && versions.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">From version</label>
-              <select
-                value={fromVersionId ?? ''}
-                onChange={e => setFromVersionId(e.target.value || null)}
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-              >
-                <option value="">Select…</option>
-                {versions.map(v => (
-                  <option key={v.id} value={v.id}>
-                    {new Date(v.uploadedAt).toLocaleString()} — {v.commitSha ?? 'no commit'}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm text-gray-400 mb-1">To version</label>
-              <select
-                value={toVersionId ?? ''}
-                onChange={e => setToVersionId(e.target.value || null)}
-                className="w-full rounded-lg border border-gray-700 bg-gray-800 px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
-              >
-                <option value="">Select…</option>
-                {versions.map(v => (
-                  <option key={v.id} value={v.id}>
-                    {new Date(v.uploadedAt).toLocaleString()} — {v.commitSha ?? 'no commit'}
-                  </option>
-                ))}
-              </select>
-            </div>
+          {mode === 'history' && versions.length === 0 && toBranch.trim() && !versionsLoading && (
+            <p className="text-sm text-muted-foreground">Enter a branch and click "Load versions" to select specific versions to compare.</p>
+          )}
+
+          <div className="pt-1">
+            <Button onClick={handleCompare} disabled={loading}>
+              {loading ? 'Comparing…' : 'Compare'}
+            </Button>
           </div>
-        )}
+        </CardContent>
+      </Card>
 
-        {mode === 'history' && versions.length === 0 && toBranch.trim() && !versionsLoading && (
-          <p className="text-sm text-gray-500">Enter a branch and click "Load versions" to select specific versions to compare.</p>
-        )}
-
-        <div className="pt-1">
-          <button
-            onClick={handleCompare}
-            disabled={loading}
-            className="rounded-lg bg-purple-700 px-5 py-2 text-sm font-medium text-white hover:bg-purple-600 disabled:opacity-50"
-          >
-            {loading ? 'Comparing…' : 'Compare'}
-          </button>
-        </div>
-      </div>
-
-      {/* Error */}
       {error && (
-        <div className="rounded-lg border border-red-800 bg-red-900/30 px-4 py-3 text-sm text-red-300">
+        <div className="rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      {/* Results */}
       {result && (
         <div className="space-y-4">
           {hasNoDiff ? (
-            <div className="rounded-xl border border-gray-800 bg-gray-900 px-5 py-8 text-center text-gray-500">
-              No differences found
-            </div>
+            <Card>
+              <CardContent className="py-8 text-center text-muted-foreground">
+                No differences found
+              </CardContent>
+            </Card>
           ) : (
             <>
               {result.added.length > 0 && (
-                <div className="rounded-xl border border-green-800 bg-green-900/20 p-5">
-                  <h2 className="text-sm font-semibold text-green-400 mb-3">
-                    Added ({result.added.length})
-                  </h2>
-                  <ul className="space-y-1">
-                    {result.added.map((ep, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <span className="rounded px-1.5 py-0.5 bg-green-800/50 text-green-300 font-mono text-xs uppercase">
-                          {ep.method}
-                        </span>
-                        <span className="text-green-200 font-mono">{ep.path}</span>
-                        {ep.summary && (
-                          <span className="text-green-600 truncate">{ep.summary}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <Card className="border-green-800">
+                  <CardContent className="pt-5">
+                    <h2 className="text-sm font-semibold text-green-400 mb-3">Added ({result.added.length})</h2>
+                    <ul className="space-y-1">
+                      {result.added.map((ep, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          <span className="rounded px-1.5 py-0.5 bg-green-800/50 text-green-300 font-mono text-xs uppercase">{ep.method}</span>
+                          <span className="text-green-200 font-mono">{ep.path}</span>
+                          {ep.summary && <span className="text-green-600 truncate">{ep.summary}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
               )}
-
               {result.removed.length > 0 && (
-                <div className="rounded-xl border border-red-800 bg-red-900/20 p-5">
-                  <h2 className="text-sm font-semibold text-red-400 mb-3">
-                    Removed ({result.removed.length})
-                  </h2>
-                  <ul className="space-y-1">
-                    {result.removed.map((ep, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <span className="rounded px-1.5 py-0.5 bg-red-800/50 text-red-300 font-mono text-xs uppercase">
-                          {ep.method}
-                        </span>
-                        <span className="text-red-200 font-mono">{ep.path}</span>
-                        {ep.summary && (
-                          <span className="text-red-600 truncate">{ep.summary}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <Card className="border-destructive/50">
+                  <CardContent className="pt-5">
+                    <h2 className="text-sm font-semibold text-destructive mb-3">Removed ({result.removed.length})</h2>
+                    <ul className="space-y-1">
+                      {result.removed.map((ep, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          <span className="rounded px-1.5 py-0.5 bg-red-800/50 text-red-300 font-mono text-xs uppercase">{ep.method}</span>
+                          <span className="text-red-200 font-mono">{ep.path}</span>
+                          {ep.summary && <span className="text-red-600 truncate">{ep.summary}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
               )}
-
               {result.modified.length > 0 && (
-                <div className="rounded-xl border border-yellow-800 bg-yellow-900/20 p-5">
-                  <h2 className="text-sm font-semibold text-yellow-400 mb-3">
-                    Modified ({result.modified.length})
-                  </h2>
-                  <ul className="space-y-1">
-                    {result.modified.map(({ before, after }, i) => (
-                      <li key={i} className="flex items-center gap-2 text-sm">
-                        <span className="rounded px-1.5 py-0.5 bg-yellow-800/50 text-yellow-300 font-mono text-xs uppercase">
-                          {after.method}
-                        </span>
-                        <span className="text-yellow-200 font-mono">{after.path}</span>
-                        {after.summary && (
-                          <span className="text-yellow-600 truncate">{before.summary} → {after.summary}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <Card className="border-amber-800/50">
+                  <CardContent className="pt-5">
+                    <h2 className="text-sm font-semibold text-amber-400 mb-3">Modified ({result.modified.length})</h2>
+                    <ul className="space-y-1">
+                      {result.modified.map(({ before, after }, i) => (
+                        <li key={i} className="flex items-center gap-2 text-sm">
+                          <span className="rounded px-1.5 py-0.5 bg-yellow-800/50 text-yellow-300 font-mono text-xs uppercase">{after.method}</span>
+                          <span className="text-yellow-200 font-mono">{after.path}</span>
+                          {after.summary && <span className="text-yellow-600 truncate">{before.summary} → {after.summary}</span>}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
               )}
             </>
           )}
