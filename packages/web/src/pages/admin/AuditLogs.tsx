@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api, AuditLog } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,6 +21,7 @@ const ACTION_TYPES = [
 const PAGE_SIZE = 50
 
 export default function AuditLogs() {
+  const { t } = useTranslation()
   const [logs, setLogs] = useState<AuditLog[]>([])
   const [total, setTotal] = useState(0)
   const [page, setPage] = useState(1)
@@ -44,7 +46,7 @@ export default function AuditLogs() {
       ...(to ? { to } : {}),
     })
       .then(d => { setLogs(d.logs); setTotal(d.total) })
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load audit logs'))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : t('admin.auditLogs.loadFailed')))
       .finally(() => setLoading(false))
   }
 
@@ -73,49 +75,49 @@ export default function AuditLogs() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Audit Logs</h1>
+      <h1 className="text-2xl font-semibold">{t('admin.auditLogs.title')}</h1>
 
       {/* Filter bar */}
       <div className="flex flex-wrap items-end gap-3 rounded-xl border border-border bg-card px-4 py-3">
         <div className="space-y-1">
-          <Label className="text-xs">Action</Label>
+          <Label className="text-xs">{t('admin.auditLogs.actionLabel')}</Label>
           <Select value={actionFilter} onValueChange={setActionFilter}>
             <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All" />
+              <SelectValue placeholder={t('admin.auditLogs.allActions')} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="all">{t('admin.auditLogs.allActions')}</SelectItem>
               {ACTION_TYPES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs">From</Label>
+          <Label className="text-xs">{t('admin.auditLogs.fromLabel')}</Label>
           <Input type="date" value={fromDate} onChange={e => setFromDate(e.target.value)} className="w-36" />
         </div>
 
         <div className="space-y-1">
-          <Label className="text-xs">To</Label>
+          <Label className="text-xs">{t('admin.auditLogs.toLabel')}</Label>
           <Input type="date" value={toDate} onChange={e => setToDate(e.target.value)} className="w-36" />
         </div>
 
-        <Button onClick={handleApply}>Apply</Button>
+        <Button onClick={handleApply}>{t('admin.auditLogs.applyButton')}</Button>
       </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       ) : (
         <>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Timestamp</TableHead>
-                <TableHead>Action</TableHead>
-                <TableHead>Actor</TableHead>
-                <TableHead>Target</TableHead>
+                <TableHead>{t('admin.auditLogs.timeHead')}</TableHead>
+                <TableHead>{t('admin.auditLogs.actionHead')}</TableHead>
+                <TableHead>{t('admin.auditLogs.userHead')}</TableHead>
+                <TableHead>{t('admin.auditLogs.targetHead')}</TableHead>
                 <TableHead>Details</TableHead>
               </TableRow>
             </TableHeader>
@@ -142,7 +144,7 @@ export default function AuditLogs() {
               {!logs.length && (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-6">
-                    No audit log entries found.
+                    {t('admin.auditLogs.noLogs')}
                   </TableCell>
                 </TableRow>
               )}
@@ -158,11 +160,11 @@ export default function AuditLogs() {
             </span>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setPage(p => p - 1)} disabled={page <= 1}>
-                Previous
+                {t('admin.auditLogs.prevPage')}
               </Button>
-              <span>Page {page} of {totalPages}</span>
+              <span>{t('admin.auditLogs.pageInfo', { page, total: totalPages })}</span>
               <Button variant="outline" size="sm" onClick={() => setPage(p => p + 1)} disabled={page * PAGE_SIZE >= total}>
-                Next
+                {t('admin.auditLogs.nextPage')}
               </Button>
             </div>
           </div>

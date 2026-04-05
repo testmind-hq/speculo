@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api, WebhookConfig } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -22,6 +23,7 @@ const ALL_EVENTS = [
 ]
 
 export default function Webhooks() {
+  const { t } = useTranslation()
   const [webhooks, setWebhooks] = useState<WebhookConfig[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -43,7 +45,7 @@ export default function Webhooks() {
     api.webhooks
       .list()
       .then(d => setWebhooks(d.webhooks))
-      .catch((e: unknown) => setError(e instanceof Error ? e.message : 'Failed to load webhooks'))
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : t('admin.webhooks.loadFailed')))
       .finally(() => setLoading(false))
   }
 
@@ -57,9 +59,9 @@ export default function Webhooks() {
   async function handleTest(id: string) {
     try {
       await api.webhooks.test(id)
-      setMsg(id, true, 'Test delivery sent')
+      setMsg(id, true, t('admin.webhooks.testSent'))
     } catch (e: unknown) {
-      setMsg(id, false, e instanceof Error ? e.message : 'Test failed')
+      setMsg(id, false, e instanceof Error ? e.message : t('admin.webhooks.testFailed'))
     }
   }
 
@@ -68,7 +70,7 @@ export default function Webhooks() {
       await api.webhooks.update(wh.id, { isActive: !wh.isActive })
       load()
     } catch (e: unknown) {
-      setMsg(wh.id, false, e instanceof Error ? e.message : 'Update failed')
+      setMsg(wh.id, false, e instanceof Error ? e.message : t('admin.webhooks.updateFailed'))
     }
   }
 
@@ -79,7 +81,7 @@ export default function Webhooks() {
       await api.webhooks.delete(deleteTarget.id)
       load()
     } catch (e: unknown) {
-      setMsg(deleteTarget.id, false, e instanceof Error ? e.message : 'Delete failed')
+      setMsg(deleteTarget.id, false, e instanceof Error ? e.message : t('admin.webhooks.deleteFailed'))
     } finally {
       setDeleting(false)
       setDeleteTarget(null)
@@ -94,7 +96,7 @@ export default function Webhooks() {
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault()
-    if (formEvents.length === 0) { setFormError('Select at least one event.'); return }
+    if (formEvents.length === 0) { setFormError(t('admin.webhooks.eventsRequired')); return }
     setFormError('')
     setFormLoading(true)
     try {
@@ -112,7 +114,7 @@ export default function Webhooks() {
       setFormActive(true)
       load()
     } catch (err: unknown) {
-      setFormError(err instanceof Error ? err.message : 'Failed to create webhook')
+      setFormError(err instanceof Error ? err.message : t('admin.webhooks.createFailed'))
     } finally {
       setFormLoading(false)
     }
@@ -120,25 +122,25 @@ export default function Webhooks() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-semibold">Webhooks</h1>
+      <h1 className="text-2xl font-semibold">{t('admin.webhooks.title')}</h1>
 
       {/* Create form */}
       <div className="rounded-xl border border-border bg-card p-5">
-        <h2 className="mb-4 text-base font-medium">New Webhook</h2>
+        <h2 className="mb-4 text-base font-medium">{t('admin.webhooks.newWebhookTitle')}</h2>
         <form onSubmit={handleCreate} className="space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>Name</Label>
-              <Input value={formName} onChange={e => setFormName(e.target.value)} required placeholder="e.g. Feishu Alerts" />
+              <Label>{t('admin.webhooks.nameLabel')}</Label>
+              <Input value={formName} onChange={e => setFormName(e.target.value)} required placeholder={t('admin.webhooks.namePlaceholder')} />
             </div>
             <div className="space-y-1.5">
-              <Label>URL</Label>
-              <Input type="url" value={formUrl} onChange={e => setFormUrl(e.target.value)} required placeholder="https://..." />
+              <Label>{t('admin.webhooks.urlLabel')}</Label>
+              <Input type="url" value={formUrl} onChange={e => setFormUrl(e.target.value)} required placeholder={t('admin.webhooks.urlPlaceholder')} />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label>Provider</Label>
+            <Label>{t('admin.webhooks.providerLabel')}</Label>
             <Select value={formProvider} onValueChange={setFormProvider}>
               <SelectTrigger className="w-[140px]">
                 <SelectValue />
@@ -150,7 +152,7 @@ export default function Webhooks() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Events</Label>
+            <Label>{t('admin.webhooks.eventsLabel')}</Label>
             <div className="flex flex-wrap gap-2">
               {ALL_EVENTS.map(ev => (
                 <div key={ev} className="flex items-center gap-1.5">
@@ -171,13 +173,13 @@ export default function Webhooks() {
               checked={formActive}
               onCheckedChange={(checked) => setFormActive(checked === true)}
             />
-            <Label htmlFor="formActive" className="cursor-pointer">Active</Label>
+            <Label htmlFor="formActive" className="cursor-pointer">{t('admin.webhooks.activeLabel')}</Label>
           </div>
 
           {formError && <p className="text-sm text-destructive">{formError}</p>}
 
           <Button type="submit" disabled={formLoading}>
-            {formLoading ? 'Creating...' : 'Create Webhook'}
+            {formLoading ? t('admin.webhooks.creating') : t('admin.webhooks.createButton')}
           </Button>
         </form>
       </div>
@@ -185,17 +187,17 @@ export default function Webhooks() {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading...</p>
+        <p className="text-sm text-muted-foreground">{t('common.loading')}</p>
       ) : (
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>URL</TableHead>
-              <TableHead>Provider</TableHead>
-              <TableHead>Events</TableHead>
-              <TableHead>Active</TableHead>
-              <TableHead>Actions</TableHead>
+              <TableHead>{t('admin.webhooks.nameHead')}</TableHead>
+              <TableHead>{t('admin.webhooks.urlHead')}</TableHead>
+              <TableHead>{t('admin.webhooks.providerHead')}</TableHead>
+              <TableHead>{t('admin.webhooks.eventsHead')}</TableHead>
+              <TableHead>{t('admin.webhooks.activeHead')}</TableHead>
+              <TableHead>{t('admin.webhooks.actionsHead')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -211,17 +213,17 @@ export default function Webhooks() {
                 </TableCell>
                 <TableCell>
                   {wh.isActive
-                    ? <Badge variant="secondary" className="text-green-400 border-green-800">Active</Badge>
-                    : <Badge variant="outline" className="text-muted-foreground">Inactive</Badge>}
+                    ? <Badge variant="secondary" className="text-green-400 border-green-800">{t('admin.webhooks.activeStatus')}</Badge>
+                    : <Badge variant="outline" className="text-muted-foreground">{t('admin.webhooks.inactiveStatus')}</Badge>}
                 </TableCell>
                 <TableCell>
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2 flex-wrap text-xs">
-                      <Button variant="ghost" size="sm" onClick={() => handleTest(wh.id)} className="h-auto p-0 text-xs text-blue-400 hover:text-blue-300 hover:bg-transparent">Test</Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleTest(wh.id)} className="h-auto p-0 text-xs text-blue-400 hover:text-blue-300 hover:bg-transparent">{t('admin.webhooks.testButton')}</Button>
                       <Button variant="ghost" size="sm" onClick={() => handleToggle(wh)} className="h-auto p-0 text-xs text-amber-500 hover:text-amber-400 hover:bg-transparent">
-                        {wh.isActive ? 'Deactivate' : 'Activate'}
+                        {wh.isActive ? t('admin.webhooks.deactivateButton') : t('admin.webhooks.activateButton')}
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(wh)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">Delete</Button>
+                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(wh)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">{t('admin.webhooks.deleteButton')}</Button>
                     </div>
                     {rowMsg[wh.id] && (
                       <span className={`text-xs ${rowMsg[wh.id].ok ? 'text-green-400' : 'text-destructive'}`}>
@@ -235,7 +237,7 @@ export default function Webhooks() {
             {!webhooks.length && (
               <TableRow>
                 <TableCell colSpan={6} className="text-center text-muted-foreground py-6">
-                  No webhooks configured yet.
+                  {t('admin.webhooks.noWebhooks')}
                 </TableCell>
               </TableRow>
             )}
@@ -246,15 +248,15 @@ export default function Webhooks() {
       <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Webhook</DialogTitle>
+            <DialogTitle>{t('admin.webhooks.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Delete webhook "{deleteTarget?.name}"? This cannot be undone.
+              {t('admin.webhooks.deleteConfirm', { name: deleteTarget?.name ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>{t('admin.webhooks.cancel')}</Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
-              {deleting ? 'Deleting…' : 'Delete'}
+              {deleting ? t('admin.webhooks.deleting') : t('admin.webhooks.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
