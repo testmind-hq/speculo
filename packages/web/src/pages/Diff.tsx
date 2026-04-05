@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api, type SpecVersion, type DiffResult } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +16,7 @@ import {
 type Mode = 'branch' | 'history'
 
 export default function Diff() {
+  const { t } = useTranslation()
   const [mode, setMode] = useState<Mode>('branch')
   const [service, setService] = useState('')
   const [fromBranch, setFromBranch] = useState('main')
@@ -34,7 +36,7 @@ export default function Diff() {
 
   async function handleLoadVersions() {
     if (!service.trim() || !toBranch.trim()) {
-      setError('Please enter both a service name and branch.')
+      setError(t('diff.errorServiceAndBranch'))
       return
     }
     setVersionsLoading(true)
@@ -49,14 +51,14 @@ export default function Diff() {
       if (data.versions.length >= 1) setToVersionId(data.versions[0].id)
       if (data.versions.length >= 2) setFromVersionId(data.versions[1].id)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed to load versions.')
+      setError(err instanceof Error ? err.message : t('diff.errorLoadFailed'))
     } finally {
       setVersionsLoading(false)
     }
   }
 
   async function handleCompare() {
-    if (!service.trim()) { setError('Please enter a service name.'); return }
+    if (!service.trim()) { setError(t('diff.errorServiceName')); return }
     setLoading(true)
     setError(null)
     setResult(null)
@@ -66,7 +68,7 @@ export default function Diff() {
 
       if (mode === 'branch') {
         if (!toBranch.trim()) {
-          setError('Please enter the target branch to compare.')
+          setError(t('diff.errorTargetBranch'))
           setLoading(false)
           return
         }
@@ -75,12 +77,12 @@ export default function Diff() {
           api.diff.versions(service.trim(), toBranch.trim()),
         ])
         if (!fromData.versions.length) {
-          setError(`No versions found for service "${service}" on branch "${fromBranch}".`)
+          setError(t('diff.errorNoVersions', { service, branch: fromBranch }))
           setLoading(false)
           return
         }
         if (!toData.versions.length) {
-          setError(`No versions found for service "${service}" on branch "${toBranch}".`)
+          setError(t('diff.errorNoVersions', { service, branch: toBranch }))
           setLoading(false)
           return
         }
@@ -88,7 +90,7 @@ export default function Diff() {
         to = toData.versions[0].id
       } else {
         if (!fromVersionId || !toVersionId) {
-          setError('Please load versions and select both From and To versions.')
+          setError(t('diff.errorSelectVersions'))
           setLoading(false)
           return
         }
@@ -99,7 +101,7 @@ export default function Diff() {
       const diff = await api.diff.compare(from, to)
       setResult(diff)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Comparison failed.')
+      setError(err instanceof Error ? err.message : t('diff.errorCompareFailed'))
     } finally {
       setLoading(false)
     }
@@ -113,7 +115,7 @@ export default function Diff() {
 
   return (
     <div className="max-w-3xl space-y-6">
-      <h1 className="text-2xl font-semibold">Spec Diff</h1>
+      <h1 className="text-2xl font-semibold">{t('diff.title')}</h1>
 
       {/* Mode tabs */}
       <div className="flex gap-1">
@@ -121,13 +123,13 @@ export default function Diff() {
           variant={mode === 'branch' ? 'secondary' : 'ghost'}
           onClick={() => { setMode('branch'); resetResult() }}
         >
-          Compare branches
+          {t('diff.compareBranches')}
         </Button>
         <Button
           variant={mode === 'history' ? 'secondary' : 'ghost'}
           onClick={() => { setMode('history'); resetResult() }}
         >
-          Version history
+          {t('diff.versionHistory')}
         </Button>
       </div>
 
@@ -136,7 +138,7 @@ export default function Diff() {
         <CardContent className="pt-5 space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="diff-service">Service name</Label>
+              <Label htmlFor="diff-service">{t('diff.serviceNameLabel')}</Label>
               <Input
                 id="diff-service"
                 value={service}
@@ -148,7 +150,7 @@ export default function Diff() {
             {mode === 'branch' ? (
               <>
                 <div className="space-y-1.5">
-                  <Label htmlFor="diff-from">From branch</Label>
+                  <Label htmlFor="diff-from">{t('diff.fromBranchLabel')}</Label>
                   <Input
                     id="diff-from"
                     value={fromBranch}
@@ -157,7 +159,7 @@ export default function Diff() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="diff-to">To branch</Label>
+                  <Label htmlFor="diff-to">{t('diff.toBranchLabel')}</Label>
                   <Input
                     id="diff-to"
                     value={toBranch}
@@ -168,7 +170,7 @@ export default function Diff() {
               </>
             ) : (
               <div className="space-y-1.5">
-                <Label htmlFor="diff-branch">Branch</Label>
+                <Label htmlFor="diff-branch">{t('diff.branchLabel')}</Label>
                 <div className="flex gap-2">
                   <Input
                     id="diff-branch"
@@ -182,7 +184,7 @@ export default function Diff() {
                     onClick={handleLoadVersions}
                     disabled={versionsLoading}
                   >
-                    {versionsLoading ? 'Loading…' : 'Load versions'}
+                    {versionsLoading ? t('diff.loadingVersions') : t('diff.loadVersions')}
                   </Button>
                 </div>
               </div>
@@ -193,10 +195,10 @@ export default function Diff() {
           {mode === 'history' && versions.length > 0 && (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 pt-2">
               <div className="space-y-1.5">
-                <Label>From version</Label>
+                <Label>{t('diff.fromVersionLabel')}</Label>
                 <Select value={fromVersionId ?? ''} onValueChange={v => setFromVersionId(v || null)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select…" />
+                    <SelectValue placeholder={t('diff.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {versions.map(v => (
@@ -208,10 +210,10 @@ export default function Diff() {
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>To version</Label>
+                <Label>{t('diff.toVersionLabel')}</Label>
                 <Select value={toVersionId ?? ''} onValueChange={v => setToVersionId(v || null)}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select…" />
+                    <SelectValue placeholder={t('diff.selectPlaceholder')} />
                   </SelectTrigger>
                   <SelectContent>
                     {versions.map(v => (
@@ -226,12 +228,12 @@ export default function Diff() {
           )}
 
           {mode === 'history' && versions.length === 0 && toBranch.trim() && !versionsLoading && (
-            <p className="text-sm text-muted-foreground">Enter a branch and click "Load versions" to select specific versions to compare.</p>
+            <p className="text-sm text-muted-foreground">{t('diff.loadVersionsHint')}</p>
           )}
 
           <div className="pt-1">
             <Button onClick={handleCompare} disabled={loading}>
-              {loading ? 'Comparing…' : 'Compare'}
+              {loading ? t('diff.comparing') : t('diff.compare')}
             </Button>
           </div>
         </CardContent>
@@ -248,7 +250,7 @@ export default function Diff() {
           {hasNoDiff ? (
             <Card>
               <CardContent className="py-8 text-center text-muted-foreground">
-                No differences found
+                {t('diff.noDiff')}
               </CardContent>
             </Card>
           ) : (
@@ -256,7 +258,7 @@ export default function Diff() {
               {result.added.length > 0 && (
                 <Card className="border-green-800">
                   <CardContent className="pt-5">
-                    <h2 className="text-sm font-semibold text-green-400 mb-3">Added ({result.added.length})</h2>
+                    <h2 className="text-sm font-semibold text-green-400 mb-3">{t('diff.added', { count: result.added.length })}</h2>
                     <ul className="space-y-1">
                       {result.added.map((ep, i) => (
                         <li key={i} className="flex items-center gap-2 text-sm">
@@ -272,7 +274,7 @@ export default function Diff() {
               {result.removed.length > 0 && (
                 <Card className="border-destructive/50">
                   <CardContent className="pt-5">
-                    <h2 className="text-sm font-semibold text-destructive mb-3">Removed ({result.removed.length})</h2>
+                    <h2 className="text-sm font-semibold text-destructive mb-3">{t('diff.removed', { count: result.removed.length })}</h2>
                     <ul className="space-y-1">
                       {result.removed.map((ep, i) => (
                         <li key={i} className="flex items-center gap-2 text-sm">
@@ -288,7 +290,7 @@ export default function Diff() {
               {result.modified.length > 0 && (
                 <Card className="border-amber-800/50">
                   <CardContent className="pt-5">
-                    <h2 className="text-sm font-semibold text-amber-400 mb-3">Modified ({result.modified.length})</h2>
+                    <h2 className="text-sm font-semibold text-amber-400 mb-3">{t('diff.modified', { count: result.modified.length })}</h2>
                     <ul className="space-y-1">
                       {result.modified.map(({ before, after }, i) => (
                         <li key={i} className="flex items-center gap-2 text-sm">

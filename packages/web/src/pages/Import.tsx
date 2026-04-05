@@ -1,5 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -7,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function Import() {
+  const { t } = useTranslation()
   const [service, setService] = useState('')
   const [branch, setBranch] = useState('main')
   const [file, setFile] = useState<File | null>(null)
@@ -24,7 +26,7 @@ export default function Import() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!file) { setError('Please select a file'); return }
+    if (!file) { setError(t('import.noFile')); return }
     setLoading(true)
     setError('')
     setResult(null)
@@ -39,7 +41,7 @@ export default function Import() {
       if (data.error) throw new Error(data.error)
       setResult(data)
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Upload failed')
+      setError(err instanceof Error ? err.message : t('import.uploadFailed'))
     } finally {
       setLoading(false)
     }
@@ -48,13 +50,13 @@ export default function Import() {
   return (
     <div className="max-w-lg space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">导入 Spec</h1>
-        <p className="mt-1 text-sm text-muted-foreground">上传 OpenAPI YAML 或 JSON 文件</p>
+        <h1 className="text-2xl font-semibold">{t('import.title')}</h1>
+        <p className="mt-1 text-sm text-muted-foreground">{t('import.subtitle')}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="service">Service name</Label>
+          <Label htmlFor="service">{t('import.serviceNameLabel')}</Label>
           <Input
             id="service"
             value={service}
@@ -64,7 +66,7 @@ export default function Import() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="branch">Branch</Label>
+          <Label htmlFor="branch">{t('import.branchLabel')}</Label>
           <Input
             id="branch"
             value={branch}
@@ -91,8 +93,8 @@ export default function Import() {
             <p className="text-sm text-violet-400">{file.name}</p>
           ) : (
             <p className="text-sm text-muted-foreground">
-              Drop openapi.yaml / openapi.json here
-              <br />or click to select
+              {t('import.dropHint')}
+              <br />{t('import.dropHintClick')}
             </p>
           )}
         </div>
@@ -106,8 +108,8 @@ export default function Import() {
         {result && (
           <Alert className="border-green-700 bg-green-950/50 text-green-400">
             <AlertDescription>
-              ✓ Uploaded — {result.endpointCount} endpoints
-              {result.wasConverted ? ' (converted from Swagger 2.0)' : ''}
+              {t('import.uploadedSuccess', { count: result.endpointCount })}
+              {result.wasConverted ? t('import.convertedNote') : ''}
               {result.warnings.length > 0 && (
                 <span className="block mt-1 text-yellow-400">{result.warnings.join(', ')}</span>
               )}
@@ -117,10 +119,10 @@ export default function Import() {
 
         <div className="flex gap-3">
           <Button type="button" variant="outline" onClick={() => navigate('/')} className="flex-1">
-            Cancel
+            {t('import.cancel')}
           </Button>
           <Button type="submit" disabled={loading} className="flex-1">
-            {loading ? 'Uploading…' : 'Upload'}
+            {loading ? t('import.uploading') : t('import.upload')}
           </Button>
         </div>
       </form>
