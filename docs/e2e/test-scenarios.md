@@ -151,11 +151,82 @@
 
 ---
 
-## S8 — Admin: Users
+## S8 — Admin: Users & User Management
+
+> **Note:** The `POST /auth/register` API exists (requires super_admin JWT) but the Admin Users page currently has **no "Create User" form** — this is a known feature gap to address.
 
 ### S8.1 View users list
+1. Login as admin, navigate to `/admin/users`
+- **Expected:** User table with Email, Role, Teams, Status, Actions columns; admin account visible
+
+### S8.2 Create a regular user (via API — UI gap)
+1. As admin, call `POST /auth/register` with `{ email: "testuser@example.com", password: "Test@12345" }`
+   - This is currently only possible via direct API call (no UI form exists)
+- **Expected:** `{ userId: "..." }` returned; new user visible in `/admin/users` after reload
+- **Gap:** Admin Users page should have a "Create User" button/form
+
+### S8.3 Change a user's role
 1. Navigate to `/admin/users`
-- **Expected:** User table with admin account visible
+2. Find `testuser@example.com`, change Role dropdown from `guest` to `team_member`
+- **Expected:** Role updates immediately without page reload
+
+### S8.4 Deactivate a user
+1. Navigate to `/admin/users`
+2. Click Deactivate on `testuser@example.com`
+- **Expected:** Status badge changes to Inactive; button label changes to Activate
+
+### S8.5 Activate a user
+1. Navigate to `/admin/users`
+2. Click Activate on the deactivated user
+- **Expected:** Status badge changes to Active
+
+### S8.6 Delete a user
+1. Navigate to `/admin/users`
+2. Click Delete on `testuser@example.com`, confirm in dialog
+- **Expected:** User removed from list
+
+---
+
+## S8B — Regular User Operations
+
+> **Setup:** Create a regular user via API first (S8.2), then perform the following as that user.
+> Test account: `testuser@example.com` / `Test@12345` (role: `guest`)
+
+### S8B.1 Regular user login
+1. Logout from admin
+2. Login as `testuser@example.com` / `Test@12345`
+- **Expected:** Login succeeds; redirected to Catalog
+
+### S8B.2 Regular user views catalog
+1. Login as regular user
+2. Navigate to `/` (Catalog)
+- **Expected:** Services visible (only services assigned to user's teams, or all if unrestricted); read-only view
+
+### S8B.3 Regular user cannot access admin pages
+1. Login as regular user
+2. Manually navigate to `/admin/users`
+- **Expected:** Redirected or shown "Forbidden" / 403; admin sidebar items not visible
+
+### S8B.4 Regular user views service documentation
+1. Login as regular user
+2. Click on a service in the Catalog
+- **Expected:** Scalar API reference renders correctly
+
+### S8B.5 Regular user manages their own MCP tokens
+1. Login as regular user, navigate to `/tokens`
+2. Create a token with name `my-token`, scope `read`
+3. Verify token appears in list
+4. Revoke the token
+- **Expected:** Token created and revoked successfully; shows one-time value on creation
+
+### S8B.6 Regular user cannot upload specs (if restricted)
+1. Login as regular user (role: `guest`)
+2. Navigate to `/import`
+- **Expected:** Either import is visible but upload is blocked by permissions, or the Import nav item is hidden
+
+### S8B.7 Regular user logout
+1. Click logout in sidebar footer
+- **Expected:** Redirected to `/login`
 
 ---
 
