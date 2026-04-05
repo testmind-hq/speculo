@@ -39,7 +39,7 @@ export default function AuditLogs() {
     api.audit.list({
       page: currentPage,
       pageSize: PAGE_SIZE,
-      ...(action ? { action } : {}),
+      ...(action && action !== 'all' ? { action } : {}),
       ...(from ? { from } : {}),
       ...(to ? { to } : {}),
     })
@@ -54,7 +54,7 @@ export default function AuditLogs() {
 
   function handleApply() {
     setPage(1)
-    setAppliedAction(actionFilter === 'all' ? '' : actionFilter)
+    setAppliedAction(actionFilter)
     setAppliedFrom(fromDate)
     setAppliedTo(toDate)
   }
