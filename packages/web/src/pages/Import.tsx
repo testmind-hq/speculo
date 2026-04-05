@@ -87,6 +87,7 @@ export default function Import() {
             type="file"
             accept=".yaml,.yml,.json"
             className="hidden"
+            data-testid="spec-file-input"
             onChange={e => setFile(e.target.files?.[0] ?? null)}
           />
           {file ? (
@@ -106,7 +107,7 @@ export default function Import() {
         )}
 
         {result && (
-          <Alert className="border-green-700 bg-green-950/50 text-green-400">
+          <Alert data-testid="upload-success-alert" className="border-green-700 bg-green-950/50 text-green-400">
             <AlertDescription>
               {t('import.uploadedSuccess', { count: result.endpointCount })}
               {result.wasConverted ? t('import.convertedNote') : ''}

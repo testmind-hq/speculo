@@ -34,12 +34,12 @@ test.afterAll(async ({ request, baseURL }) => {
 test('create a read token and verify it appears in the list', async ({ page }) => {
   await page.goto('/settings/tokens')
 
-  await page.fill('input[placeholder*="Token name" i]', TOKEN_READ)
+  await page.getByTestId('token-name-input').fill(TOKEN_READ)
   // Scope select defaults to "read" — no change needed
   await page.getByRole('button', { name: /^create$/i }).click()
 
   // One-time token alert appears with the token value
-  const alert = page.getByRole('alert').filter({ hasText: /token created/i })
+  const alert = page.getByTestId('token-created-alert')
   await expect(alert).toBeVisible({ timeout: 10_000 })
   await expect(alert).toContainText('speculo_mcp_')
 
@@ -50,7 +50,7 @@ test('create a read token and verify it appears in the list', async ({ page }) =
 test('create a write token', async ({ page }) => {
   await page.goto('/settings/tokens')
 
-  await page.fill('input[placeholder*="Token name" i]', TOKEN_WRITE)
+  await page.getByTestId('token-name-input').fill(TOKEN_WRITE)
 
   // Switch scope to write
   await page.getByRole('combobox').click()
@@ -58,7 +58,7 @@ test('create a write token', async ({ page }) => {
 
   await page.getByRole('button', { name: /^create$/i }).click()
 
-  await expect(page.getByRole('alert').filter({ hasText: /token created/i })).toBeVisible({ timeout: 10_000 })
+  await expect(page.getByTestId('token-created-alert')).toBeVisible({ timeout: 10_000 })
   await expect(page.getByRole('row').filter({ hasText: TOKEN_WRITE })).toBeVisible()
 })
 

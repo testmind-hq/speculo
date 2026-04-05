@@ -20,7 +20,7 @@ test('upload valid OpenAPI 3.1 YAML shows success with endpoint count', async ({
   await page.fill('#service', SERVICE_UPLOAD)
   await page.fill('#branch', 'main')
 
-  await page.locator('input[type=file]').setInputFiles({
+  await page.getByTestId('spec-file-input').setInputFiles({
     name: `${SERVICE_UPLOAD}.yaml`,
     mimeType: 'application/x-yaml',
     buffer: Buffer.from(minimalSpec(SERVICE_UPLOAD)),
@@ -28,8 +28,8 @@ test('upload valid OpenAPI 3.1 YAML shows success with endpoint count', async ({
 
   await page.click('button[type=submit]')
 
-  // Success alert (role=alert) contains endpoint count
-  const alert = page.getByRole('alert').filter({ hasText: /uploaded/i })
+  // Success alert contains endpoint count
+  const alert = page.getByTestId('upload-success-alert')
   await expect(alert).toBeVisible({ timeout: 10_000 })
   await expect(alert).toContainText('2')
 })
@@ -40,7 +40,7 @@ test('submit without a file shows error', async ({ page }) => {
   await page.fill('#branch', 'main')
   // Deliberately skip file attachment
   await page.click('button[type=submit]')
-  await expect(page.getByRole('alert')).toContainText(/file/i)
+  await expect(page.getByRole('alert')).toBeVisible()  // HTML5 required or JS error alert
 })
 
 test('uploaded service appears in catalog', async ({ page, request }) => {

@@ -134,3 +134,43 @@ Registered in `mcp/server.ts`, implemented in `mcp/tools/`:
 ### Migrations
 
 Drizzle migrations live in `packages/api/src/db/migrations/`. After changing `schema.ts`, run `pnpm db:generate` to produce a new SQL migration file, then `pnpm db:migrate` to apply it. Current migrations: `0000_gigantic_bullseye.sql` (initial schema), `0001_exotic_pyro.sql` (prefix column widened to 24 chars).
+
+## E2E Testing (`packages/e2e/`)
+
+### Commands
+
+```bash
+# Run all e2e tests (requires server running or BASE_URL set)
+cd packages/e2e && pnpm test
+
+# Interactive UI mode
+cd packages/e2e && pnpm test:ui
+
+# Against a remote server
+BASE_URL=http://10.0.0.5:3000 cd packages/e2e && pnpm test
+```
+
+Copy `.env.e2e.example` to `.env.e2e` and fill in credentials before running locally.
+
+### Selector stability rules
+
+Prefer selectors in this order — use the most stable one available:
+
+1. **`data-testid`** — best; immune to translation, style, and structure changes
+2. **`aria-label`** / ARIA role + accessible name — good for interactive elements
+3. **Role-based** (`getByRole('button', { name: /text/i })`) — acceptable
+4. **`getByText`** — only for assertions, not for finding interactive elements
+5. **CSS classes / placeholder text** — avoid; breaks when styles or i18n change
+
+### `data-testid` conventions
+
+- Add `data-testid` to any element that e2e tests need to find and that has no stable ARIA role + name
+- Use kebab-case names that describe the element's purpose: `token-name-input`, `upload-success-alert`
+- Keep names stable — renaming a testid breaks tests just like renaming a CSS class would
+- When adding a new UI element that tests will target, add the `data-testid` in the same PR as the test
+
+### Maintenance workflow
+
+- **UI change**: If an element's text, class, or structure changes, check `packages/e2e/tests/` for selectors that target it. Update any CSS/text-based selectors; `data-testid` selectors need no update unless the element itself is removed or repurposed.
+- **New feature**: Write the test spec first (or alongside the feature). Add `data-testid` to any elements the test needs.
+- **Failing test in CI**: Run `pnpm test:ui` locally with `BASE_URL` pointing at the dev server to debug interactively.
