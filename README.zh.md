@@ -18,7 +18,7 @@
 ### Docker（推荐）
 
 ```bash
-git clone https://github.com/yuchou87/speculo.git
+git clone https://github.com/testmind-hq/speculo.git
 cd speculo
 
 # 生成安全的 JWT 密钥
