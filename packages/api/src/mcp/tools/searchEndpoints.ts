@@ -4,7 +4,10 @@ import { and, eq, sql } from 'drizzle-orm'
 import { db } from '../../db/index.js'
 import { endpointIndex } from '../../db/schema.js'
 
-export function searchEndpointsTool(server: McpServer) {
+export function searchEndpointsTool(
+  server: McpServer,
+  canAccess: (service: string, branch?: string) => Promise<boolean>,
+) {
   server.tool(
     'search_endpoints',
     '搜索接口，返回匹配列表（最多10条）。先用此工具找到接口，再用 get_endpoint_detail 获取详情。',
@@ -14,6 +17,10 @@ export function searchEndpointsTool(server: McpServer) {
       q: z.string().describe('搜索关键词'),
     },
     async ({ service, branch, q }) => {
+      if (!await canAccess(service, branch)) {
+        return { isError: true, content: [{ type: 'text' as const, text: `Access denied: ${service}` }] }
+      }
+
       const pattern = `%${q}%`
       const conditions = [
         eq(endpointIndex.serviceName, service),

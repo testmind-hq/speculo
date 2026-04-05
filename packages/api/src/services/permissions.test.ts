@@ -1,112 +1,155 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
-// ── DB mock ────────────────────────────────────────────────────────────────────
+// All DB calls are mocked — no real DB needed
+const mockSelect = vi.fn()
+const mockFindFirstService = vi.fn()
+const mockFindManyGrant = vi.fn()
+
 vi.mock('../db/index.js', () => ({
   db: {
+    select: mockSelect,
     query: {
-      users:           { findFirst: vi.fn() },
-      services:        { findFirst: vi.fn() },
-      teamMembers:     { findFirst: vi.fn() },
-      crossTeamGrants: { findFirst: vi.fn(), findMany: vi.fn() },
+      services: { findFirst: mockFindFirstService },
+      crossTeamGrants: { findMany: mockFindManyGrant },
     },
-    select: vi.fn(() => ({
-      from: vi.fn(() => ({
-        where: vi.fn().mockResolvedValue([]),
-      })),
-    })),
   },
 }))
 
 process.env.DATABASE_URL = 'postgresql://x:x@localhost/x'
-process.env.JWT_SECRET   = 'a'.repeat(32)
+process.env.JWT_SECRET = 'a'.repeat(32)
 
-const { canAccessBranch } = await import('./permissions.js')
-const { db } = await import('../db/index.js')
+const { getAccessibleServiceIds, canAccessService } = await import('./permissions.js')
 
-const mockService = { id: 'svc-1', teamId: 'team-a' }
+// Helper: make db.select chain return a value
+function makeSelectChain(rows: unknown[]) {
+  const chain: any = { from: vi.fn(), where: vi.fn(), $dynamic: vi.fn() }
+  chain.from.mockReturnValue(chain)
+  chain.where.mockResolvedValue(rows)
+  return chain
+}
 
-beforeEach(() => {
-  vi.mocked(db.query.users.findFirst).mockResolvedValue({ role: 'team_member', isActive: true } as any)
-  vi.mocked(db.query.services.findFirst).mockResolvedValue(mockService as any)
-  vi.mocked(db.query.teamMembers.findFirst).mockResolvedValue(undefined)
-  vi.mocked(db.query.crossTeamGrants.findFirst).mockResolvedValue(undefined)
-  vi.mocked(db.query.crossTeamGrants.findMany).mockResolvedValue([])
-  vi.mocked(db.select).mockReturnValue({
-    from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
-  } as any)
+describe('getAccessibleServiceIds', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('returns null for super_admin (all services)', async () => {
+    const result = await getAccessibleServiceIds('user-1', 'super_admin')
+    expect(result).toBeNull()
+  })
+
+  it('returns set with owned service IDs for team member', async () => {
+    // First select: teamMembers → returns team-1
+    mockSelect
+      .mockReturnValueOnce(makeSelectChain([{ teamId: 'team-1' }]))
+    // Second select: owned services → returns svc-1
+      .mockReturnValueOnce(makeSelectChain([{ id: 'svc-1' }]))
+    // Third select: granted services → returns nothing
+      .mockReturnValueOnce(makeSelectChain([]))
+
+    const result = await getAccessibleServiceIds('user-1', 'guest')
+    expect(result).toEqual(new Set(['svc-1']))
+  })
+
+  it('returns set with granted service IDs for guest', async () => {
+    // First select: teamMembers → no teams
+    mockSelect
+      .mockReturnValueOnce(makeSelectChain([]))
+    // Second select: granted services → returns svc-2
+      .mockReturnValueOnce(makeSelectChain([{ serviceId: 'svc-2' }]))
+
+    const result = await getAccessibleServiceIds('user-1', 'guest')
+    expect(result).toEqual(new Set(['svc-2']))
+  })
+
+  it('returns empty set when user has no teams and no grants', async () => {
+    mockSelect
+      .mockReturnValueOnce(makeSelectChain([]))  // teamMembers
+      .mockReturnValueOnce(makeSelectChain([]))  // grants
+
+    const result = await getAccessibleServiceIds('user-1', 'guest')
+    expect(result).toEqual(new Set())
+  })
 })
 
-describe('canAccessBranch', () => {
-  it('returns true for super_admin regardless of team', async () => {
-    vi.mocked(db.query.users.findFirst).mockResolvedValueOnce({ role: 'super_admin', isActive: true } as any)
-    const result = await canAccessBranch('user-1', 'my-service', 'main')
+describe('canAccessService', () => {
+  beforeEach(() => { vi.clearAllMocks() })
+
+  it('returns true for super_admin without any DB call', async () => {
+    const result = await canAccessService('user-1', 'super_admin', 'user-service')
     expect(result).toBe(true)
+    expect(mockFindFirstService).not.toHaveBeenCalled()
   })
 
-  it('returns false when user is not found or inactive', async () => {
-    vi.mocked(db.query.users.findFirst).mockResolvedValueOnce(undefined)
-    const result = await canAccessBranch('ghost', 'my-service', 'main')
+  it('returns false for unknown service', async () => {
+    mockFindFirstService.mockResolvedValue(undefined)
+    const result = await canAccessService('user-1', 'guest', 'nonexistent')
     expect(result).toBe(false)
   })
 
-  it('returns false when service does not exist', async () => {
-    vi.mocked(db.query.services.findFirst).mockResolvedValueOnce(undefined)
-    const result = await canAccessBranch('user-1', 'no-such-service', 'main')
-    expect(result).toBe(false)
+  it('returns true when user is a member of the owning team', async () => {
+    mockFindFirstService.mockResolvedValue({ id: 'svc-1', teamId: 'team-1' })
+    // teamMembers select
+    mockSelect.mockReturnValueOnce(makeSelectChain([{ teamId: 'team-1' }]))
+    const result = await canAccessService('user-1', 'guest', 'user-service')
+    expect(result).toBe(true)
+    expect(mockFindManyGrant).not.toHaveBeenCalled()
   })
 
-  it('returns true when user is a member of the service owning team', async () => {
-    // User IS a member of team-a (the service's team)
-    vi.mocked(db.query.teamMembers.findFirst).mockResolvedValueOnce({ id: 'mem-1' } as any)
-    const result = await canAccessBranch('user-1', 'my-service', 'main')
+  it('returns true when user has a cross-team grant for all branches', async () => {
+    mockFindFirstService.mockResolvedValue({ id: 'svc-1', teamId: 'team-2' })
+    mockSelect.mockReturnValueOnce(makeSelectChain([{ teamId: 'team-1' }]))
+    mockFindManyGrant.mockResolvedValue([{ branches: null }])  // null = all branches
+
+    const result = await canAccessService('user-1', 'guest', 'user-service', 'main')
     expect(result).toBe(true)
   })
 
-  it('returns false when user has no membership and no grants', async () => {
-    // No team membership, no user teams → no team grants, no user grant
-    const result = await canAccessBranch('user-1', 'my-service', 'main')
-    expect(result).toBe(false)
-  })
+  it('returns true when grant covers the requested branch', async () => {
+    mockFindFirstService.mockResolvedValue({ id: 'svc-1', teamId: 'team-2' })
+    mockSelect.mockReturnValueOnce(makeSelectChain([{ teamId: 'team-1' }]))
+    mockFindManyGrant.mockResolvedValue([{ branches: ['main', 'staging'] }])
 
-  it('returns true via a team-level grant covering all branches', async () => {
-    // User belongs to team-b
-    vi.mocked(db.select).mockReturnValueOnce({
-      from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ teamId: 'team-b' }]) })),
-    } as any)
-    // Team-b has a grant with branches: null (= all branches)
-    vi.mocked(db.query.crossTeamGrants.findMany).mockResolvedValueOnce([{ branches: null }] as any)
-    const result = await canAccessBranch('user-1', 'my-service', 'main')
+    const result = await canAccessService('user-1', 'guest', 'user-service', 'main')
     expect(result).toBe(true)
   })
 
-  it('returns true via a user-level grant when no team grants exist', async () => {
-    // No team memberships
-    vi.mocked(db.select).mockReturnValueOnce({
-      from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
-    } as any)
-    // User-level grant covering all branches
-    vi.mocked(db.query.crossTeamGrants.findMany).mockResolvedValueOnce([{ branches: null }] as any)
-    const result = await canAccessBranch('user-1', 'my-service', 'main')
-    expect(result).toBe(true)
-  })
+  it('returns false when grant exists but does not cover the requested branch', async () => {
+    mockFindFirstService.mockResolvedValue({ id: 'svc-1', teamId: 'team-2' })
+    mockSelect.mockReturnValueOnce(makeSelectChain([{ teamId: 'team-1' }]))
+    mockFindManyGrant.mockResolvedValue([{ branches: ['staging'] }])
 
-  it('returns false when user grant restricts branches and branch does not match', async () => {
-    // No team memberships
-    vi.mocked(db.select).mockReturnValueOnce({
-      from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([]) })),
-    } as any)
-    // User-level grant only allows 'dev' branch
-    vi.mocked(db.query.crossTeamGrants.findMany).mockResolvedValueOnce([{ branches: ['dev'] }] as any)
-    const result = await canAccessBranch('user-1', 'my-service', 'main')
+    const result = await canAccessService('user-1', 'guest', 'user-service', 'main')
     expect(result).toBe(false)
   })
 
-  it('returns true when team grant covers specific branch', async () => {
-    vi.mocked(db.select).mockReturnValueOnce({
-      from: vi.fn(() => ({ where: vi.fn().mockResolvedValue([{ teamId: 'team-b' }]) })),
-    } as any)
-    vi.mocked(db.query.crossTeamGrants.findMany).mockResolvedValueOnce([{ branches: ['main', 'staging'] }] as any)
-    const result = await canAccessBranch('user-1', 'my-service', 'main')
+  it('returns false when no grant exists and user is not a team member', async () => {
+    mockFindFirstService.mockResolvedValue({ id: 'svc-1', teamId: 'team-2' })
+    mockSelect.mockReturnValueOnce(makeSelectChain([{ teamId: 'team-1' }]))
+    mockFindManyGrant.mockResolvedValue([])
+
+    const result = await canAccessService('user-1', 'guest', 'user-service')
+    expect(result).toBe(false)
+  })
+
+  it('returns false when all grants are expired (findMany returns empty)', async () => {
+    mockFindFirstService.mockResolvedValue({ id: 'svc-1', teamId: 'team-2' })
+    mockSelect.mockReturnValueOnce(makeSelectChain([{ teamId: 'team-1' }]))
+    // expiry filter excluded the grant — findMany returns empty
+    mockFindManyGrant.mockResolvedValue([])
+
+    const result = await canAccessService('user-1', 'guest', 'user-service', 'main')
+    expect(result).toBe(false)
+  })
+
+  it('returns true when first grant is restrictive but second grant covers all branches', async () => {
+    mockFindFirstService.mockResolvedValue({ id: 'svc-1', teamId: 'team-2' })
+    mockSelect.mockReturnValueOnce(makeSelectChain([{ teamId: 'team-1' }]))
+    // First grant: restricts to staging only; second grant: covers all branches (null)
+    mockFindManyGrant.mockResolvedValue([
+      { branches: ['staging'] },
+      { branches: null },
+    ])
+
+    const result = await canAccessService('user-1', 'guest', 'user-service', 'main')
     expect(result).toBe(true)
   })
 })

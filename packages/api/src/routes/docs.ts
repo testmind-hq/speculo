@@ -5,6 +5,7 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { services, specVersions } from '../db/schema.js'
 import { env } from '../env.js'
+import { canAccessService } from '../services/permissions.js'
 
 export const docsRouter = new Hono()
 
@@ -13,12 +14,22 @@ docsRouter.get('/docs/:service/:branch', async (c) => {
   const auth = c.req.header('Authorization')
   const token = auth?.startsWith('Bearer ') ? auth.slice(7) : getCookie(c, 'speculo_token')
   if (!token) return c.redirect('/login', 302)
+
+  let userId: string
+  let userRole: string
   try {
-    await verify(token, env.JWT_SECRET, 'HS256')
+    const payload = await verify(token, env.JWT_SECRET, 'HS256')
+    if (typeof payload.userId !== 'string') throw new Error('bad payload')
+    userId = payload.userId
+    userRole = typeof payload.role === 'string' ? payload.role : 'guest'
   } catch {
     return c.redirect('/login', 302)
   }
+
   const { service, branch } = c.req.param()
+
+  const accessible = await canAccessService(userId, userRole, service, branch)
+  if (!accessible) return c.redirect('/catalog', 302)
 
   const [row] = await db
     .select({ id: specVersions.id })

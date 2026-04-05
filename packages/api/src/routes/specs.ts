@@ -3,6 +3,7 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
 import { services, specVersions } from '../db/schema.js'
 import { jwtAuth } from '../middleware/jwtAuth.js'
+import { canAccessService } from '../services/permissions.js'
 
 export const specsRouter = new OpenAPIHono()
 
@@ -21,10 +22,14 @@ specsRouter.openapi(createRoute({
   },
   responses: {
     200: { content: { 'application/json': { schema: z.record(z.any()) } }, description: 'OpenAPI document' },
+    403: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Forbidden' },
     404: { content: { 'application/json': { schema: z.object({ error: z.string() }) } }, description: 'Not found' },
   },
 }), async (c) => {
   const { service, branch } = c.req.valid('param')
+
+  const accessible = await canAccessService(c.get('userId'), c.get('userRole'), service, branch)
+  if (!accessible) return c.json({ error: 'Forbidden' }, 403 as const)
 
   const [row] = await db
     .select({ specContent: specVersions.specContent })

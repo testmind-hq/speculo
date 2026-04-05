@@ -1,86 +1,127 @@
-import { eq, and, inArray, isNull, or, gt } from 'drizzle-orm'
+import { and, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { users, services, teams, teamMembers, crossTeamGrants } from '../db/schema.js'
+import { crossTeamGrants, services, teamMembers, teams, users } from '../db/schema.js'
 
-/** Returns true if userId can access the given service branch. */
+/**
+ * Returns the set of service IDs accessible to the user.
+ * Returns null for super_admin (all services accessible).
+ * Returns an empty Set if the user has no accessible services.
+ */
+export async function getAccessibleServiceIds(
+  userId: string,
+  userRole: string,
+): Promise<Set<string> | null> {
+  if (userRole === 'super_admin') return null
+
+  const userTeamRows = await db
+    .select({ teamId: teamMembers.teamId })
+    .from(teamMembers)
+    .where(eq(teamMembers.userId, userId))
+  const userTeamIds = userTeamRows.map(r => r.teamId)
+
+  const ownedServices = userTeamIds.length > 0
+    ? await db
+        .select({ id: services.id })
+        .from(services)
+        .where(inArray(services.teamId, userTeamIds))
+    : []
+
+  const grantedServices = await db
+    .select({ serviceId: crossTeamGrants.serviceId })
+    .from(crossTeamGrants)
+    .where(and(
+      or(
+        userTeamIds.length > 0
+          ? inArray(crossTeamGrants.granteeTeamId, userTeamIds)
+          : sql`false`,
+        eq(crossTeamGrants.granteeUserId, userId),
+      ),
+      or(isNull(crossTeamGrants.expiresAt), gt(crossTeamGrants.expiresAt, new Date())),
+    ))
+
+  return new Set([
+    ...ownedServices.map(s => s.id),
+    ...grantedServices.map(g => g.serviceId),
+  ])
+}
+
+/**
+ * Returns true if the user can access the named service at the specified branch.
+ * Convenience wrapper around canAccessService with branch required.
+ */
 export async function canAccessBranch(
   userId: string,
   serviceName: string,
   branch: string,
 ): Promise<boolean> {
+  // Fetch user role; also verify account is active (disabled accounts lose access immediately)
   const user = await db.query.users.findFirst({
     where: and(eq(users.id, userId), eq(users.isActive, true)),
     columns: { role: true },
   })
   if (!user) return false
-
-  // super_admin has full access
-  if (user.role === 'super_admin') return true
-
-  const service = await db.query.services.findFirst({
-    where: eq(services.name, serviceName),
-    columns: { id: true, teamId: true },
-  })
-  if (!service) return false
-
-  // team_member / team_owner of the service's owning team have full access
-  if (service.teamId) {
-    const membership = await db.query.teamMembers.findFirst({
-      where: and(eq(teamMembers.userId, userId), eq(teamMembers.teamId, service.teamId)),
-    })
-    if (membership) return true
-  }
-
-  // Cross-team grants: team-level
-  const userTeams = await db
-    .select({ teamId: teamMembers.teamId })
-    .from(teamMembers)
-    .where(eq(teamMembers.userId, userId))
-  const userTeamIds = userTeams.map(r => r.teamId)
-
-  if (userTeamIds.length > 0) {
-    const teamGrants = await db.query.crossTeamGrants.findMany({
-      where: and(
-        eq(crossTeamGrants.serviceId, service.id),
-        inArray(crossTeamGrants.granteeTeamId, userTeamIds),
-        or(isNull(crossTeamGrants.expiresAt), gt(crossTeamGrants.expiresAt, new Date())),
-      ),
-    })
-    if (teamGrants.some(g => checkBranch(g.branches, branch))) return true
-  }
-
-  // Cross-team grants: user-level
-  const userGrants = await db.query.crossTeamGrants.findMany({
-    where: and(
-      eq(crossTeamGrants.serviceId, service.id),
-      eq(crossTeamGrants.granteeUserId, userId),
-      or(isNull(crossTeamGrants.expiresAt), gt(crossTeamGrants.expiresAt, new Date())),
-    ),
-  })
-  if (userGrants.some(g => checkBranch(g.branches, branch))) return true
-
-  return false
+  return canAccessService(userId, user.role, serviceName, branch)
 }
 
-function checkBranch(allowed: string[] | null, branch: string): boolean {
-  if (!allowed || allowed.length === 0) return true
-  return allowed.includes(branch)
-}
-
-/** Returns the default team id (the `is_default = true` team). */
+/**
+ * Returns the ID of the default team (isDefault = true).
+ * Returns null if no default team exists.
+ */
 export async function getDefaultTeamId(): Promise<string | null> {
-  const team = await db.query.teams.findFirst({
+  const row = await db.query.teams.findFirst({
     where: eq(teams.isDefault, true),
     columns: { id: true },
   })
-  return team?.id ?? null
+  return row?.id ?? null
 }
 
-/** Returns all team IDs the user belongs to. */
-export async function getUserTeamIds(userId: string): Promise<string[]> {
-  const rows = await db
+/**
+ * Returns true if the user can access the named service.
+ * If `branch` is provided, also checks branch-level grant restrictions.
+ * super_admin always returns true without any DB queries.
+ */
+export async function canAccessService(
+  userId: string,
+  userRole: string,
+  serviceName: string,
+  branch?: string,
+): Promise<boolean> {
+  if (userRole === 'super_admin') return true
+
+  const svc = await db.query.services.findFirst({
+    where: eq(services.name, serviceName),
+    columns: { id: true, teamId: true },
+  })
+  if (!svc) return false
+
+  const userTeamRows = await db
     .select({ teamId: teamMembers.teamId })
     .from(teamMembers)
     .where(eq(teamMembers.userId, userId))
-  return rows.map(r => r.teamId)
+  const userTeamIds = userTeamRows.map(r => r.teamId)
+
+  // Direct team membership — access all branches unconditionally
+  if (svc.teamId && userTeamIds.includes(svc.teamId)) return true
+
+  // Cross-team or personal grant (with optional expiry)
+  const grants = await db.query.crossTeamGrants.findMany({
+    where: and(
+      eq(crossTeamGrants.serviceId, svc.id),
+      or(
+        userTeamIds.length > 0
+          ? inArray(crossTeamGrants.granteeTeamId, userTeamIds)
+          : sql`false`,
+        eq(crossTeamGrants.granteeUserId, userId),
+      ),
+      or(isNull(crossTeamGrants.expiresAt), gt(crossTeamGrants.expiresAt, new Date())),
+    ),
+    columns: { branches: true },
+  })
+
+  if (grants.length === 0) return false
+  // Return true if any grant covers the requested branch
+  return grants.some(grant => {
+    if (!branch || !grant.branches) return true  // grant covers all branches
+    return grant.branches.includes(branch)
+  })
 }
