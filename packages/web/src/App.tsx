@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from '@/components/ui/sonner'
+import Sidebar from './components/Sidebar.js'
 import Login from './pages/Login.js'
 import Catalog from './pages/Catalog.js'
 import Import from './pages/Import.js'
@@ -12,15 +14,14 @@ import TeamGrants from './pages/admin/TeamGrants.js'
 import AdminUsers from './pages/admin/Users.js'
 import AuditLogs from './pages/admin/AuditLogs.js'
 import Webhooks from './pages/admin/Webhooks.js'
-import Nav from './components/Nav.js'
 
 function PrivateLayout({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('speculo_token')
   if (!token) return <Navigate to="/login" replace />
   return (
-    <div className="min-h-screen">
-      <Nav />
-      <main className="container mx-auto px-4 py-8">{children}</main>
+    <div className="flex h-screen overflow-hidden bg-background">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto p-8">{children}</main>
     </div>
   )
 }
@@ -51,28 +52,31 @@ function AdminLayout({ children, requiredRole }: { children: React.ReactNode; re
   if (!allowed) return <Navigate to="/" replace />
 
   return (
-    <div className="min-h-screen">
-      <Nav />
-      <main className="container mx-auto px-4 py-8">{children}</main>
+    <div className="flex h-screen overflow-hidden bg-background">
+      <Sidebar />
+      <main className="flex-1 overflow-y-auto p-8">{children}</main>
     </div>
   )
 }
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<Login />} />
-      <Route path="/" element={<PrivateLayout><Catalog /></PrivateLayout>} />
-      <Route path="/import" element={<PrivateLayout><Import /></PrivateLayout>} />
-      <Route path="/settings/tokens" element={<PrivateLayout><Tokens /></PrivateLayout>} />
-      <Route path="/diff" element={<PrivateLayout><Diff /></PrivateLayout>} />
-      <Route path="/admin/teams" element={<AdminLayout requiredRole="super_admin"><AdminTeams /></AdminLayout>} />
-      <Route path="/admin/teams/:id/members" element={<AdminLayout><TeamMembers /></AdminLayout>} />
-      <Route path="/admin/teams/:id/services" element={<AdminLayout><TeamServices /></AdminLayout>} />
-      <Route path="/admin/teams/:id/grants" element={<AdminLayout><TeamGrants /></AdminLayout>} />
-      <Route path="/admin/users" element={<AdminLayout requiredRole="super_admin"><AdminUsers /></AdminLayout>} />
-      <Route path="/admin/audit-logs" element={<AdminLayout requiredRole="super_admin"><AuditLogs /></AdminLayout>} />
-      <Route path="/admin/webhooks" element={<AdminLayout requiredRole="super_admin"><Webhooks /></AdminLayout>} />
-    </Routes>
+    <>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<PrivateLayout><Catalog /></PrivateLayout>} />
+        <Route path="/import" element={<PrivateLayout><Import /></PrivateLayout>} />
+        <Route path="/settings/tokens" element={<PrivateLayout><Tokens /></PrivateLayout>} />
+        <Route path="/diff" element={<PrivateLayout><Diff /></PrivateLayout>} />
+        <Route path="/admin/teams" element={<AdminLayout requiredRole="super_admin"><AdminTeams /></AdminLayout>} />
+        <Route path="/admin/teams/:id/members" element={<AdminLayout><TeamMembers /></AdminLayout>} />
+        <Route path="/admin/teams/:id/services" element={<AdminLayout><TeamServices /></AdminLayout>} />
+        <Route path="/admin/teams/:id/grants" element={<AdminLayout><TeamGrants /></AdminLayout>} />
+        <Route path="/admin/users" element={<AdminLayout requiredRole="super_admin"><AdminUsers /></AdminLayout>} />
+        <Route path="/admin/audit-logs" element={<AdminLayout requiredRole="super_admin"><AuditLogs /></AdminLayout>} />
+        <Route path="/admin/webhooks" element={<AdminLayout requiredRole="super_admin"><Webhooks /></AdminLayout>} />
+      </Routes>
+      <Toaster />
+    </>
   )
 }

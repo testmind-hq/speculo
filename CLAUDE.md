@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Notes
+
+- `docs/superpowers/` is gitignored — specs, plans, and brainstorm files live there locally but are never committed.
+
 ## What is Speculo
 
 Self-hosted internal API documentation platform. Teams upload OpenAPI specs; Speculo stores them in PostgreSQL, renders them via Scalar, and exposes them to AI assistants via MCP (Model Context Protocol).

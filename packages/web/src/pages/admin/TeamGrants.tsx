@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, type Grant, type Team, type Service } from '../../lib/api.js'
+import { api, type Grant, type Team, type Service } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 
 export default function TeamGrants() {
   const { id } = useParams<{ id: string }>()
@@ -11,8 +22,9 @@ export default function TeamGrants() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [tab, setTab] = useState<'out' | 'in'>('out')
+  const [revokeTarget, setRevokeTarget] = useState<Grant | null>(null)
+  const [revoking, setRevoking] = useState(false)
 
-  // new grant form state
   const [newServiceId, setNewServiceId] = useState('')
   const [granteeType, setGranteeType] = useState<'team' | 'user'>('team')
   const [granteeTeamId, setGranteeTeamId] = useState('')
@@ -31,15 +43,14 @@ export default function TeamGrants() {
       setOutgoing(gRes.outgoing)
       setIncoming(gRes.incoming)
       setServices(sRes.services)
-      // teams.list() is super_admin-only; team_owner can still use this page without it
       try {
         const tRes = await api.admin.teams.list()
         setTeams(tRes.teams.filter(t => t.id !== id))
       } catch {
-        // not a super_admin — leave teams list empty; grantee team dropdown won't populate
+        // not super_admin — teams list unavailable
       }
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }
@@ -66,132 +77,172 @@ export default function TeamGrants() {
       setBranchInput('')
       setExpiresAt('')
       await load()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setSubmitting(false)
     }
   }
 
-  async function revokeGrant(grantId: string) {
-    if (!confirm('Revoke this grant?')) return
+  async function confirmRevoke() {
+    if (!revokeTarget) return
+    setRevoking(true)
     try {
-      await api.admin.grants.delete(grantId)
+      await api.admin.grants.delete(revokeTarget.id)
       await load()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
+    } finally {
+      setRevoking(false)
+      setRevokeTarget(null)
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading…</p>
+  if (loading) return <p className="text-muted-foreground">Loading…</p>
 
   const currentList = tab === 'out' ? outgoing : incoming
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/admin/teams" className="text-gray-500 hover:text-white text-sm">← Teams</Link>
+        <Link to="/admin/teams" className="text-muted-foreground hover:text-foreground text-sm">← Teams</Link>
         <h1 className="text-2xl font-semibold">Cross-Team Grants</h1>
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-destructive text-sm">{error}</p>}
 
       {tab === 'out' && (
-        <form onSubmit={createGrant} className="rounded-xl border border-gray-800 bg-gray-900 p-4 space-y-3">
-          <p className="text-sm font-medium text-gray-300">New Grant</p>
-          <div className="flex flex-wrap gap-2">
-            <select value={newServiceId} onChange={e => setNewServiceId(e.target.value)}
-              className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white">
-              <option value="">Select service…</option>
-              {services.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
+        <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <p className="text-sm font-medium">New Grant</p>
+          <form onSubmit={createGrant} className="flex flex-wrap gap-2">
+            <Select value={newServiceId} onValueChange={setNewServiceId}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder="Select service…" />
+              </SelectTrigger>
+              <SelectContent>
+                {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
 
-            <select value={granteeType} onChange={e => setGranteeType(e.target.value as 'team' | 'user')}
-              className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white">
-              <option value="team">Team</option>
-              <option value="user">User ID</option>
-            </select>
+            <Select value={granteeType} onValueChange={v => setGranteeType(v as 'team' | 'user')}>
+              <SelectTrigger className="w-[100px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="team">Team</SelectItem>
+                <SelectItem value="user">User ID</SelectItem>
+              </SelectContent>
+            </Select>
 
-            {granteeType === 'team'
-              ? (
-                <select value={granteeTeamId} onChange={e => setGranteeTeamId(e.target.value)}
-                  className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white">
-                  <option value="">Select team…</option>
-                  {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-                </select>
-              ) : (
-                <input value={granteeUserId} onChange={e => setGranteeUserId(e.target.value)}
-                  placeholder="user-id"
-                  className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white" />
-              )
-            }
+            {granteeType === 'team' ? (
+              <Select value={granteeTeamId} onValueChange={setGranteeTeamId}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Select team…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input
+                value={granteeUserId}
+                onChange={e => setGranteeUserId(e.target.value)}
+                placeholder="user-id"
+                className="w-36"
+              />
+            )}
 
-            <input value={branchInput} onChange={e => setBranchInput(e.target.value)}
-              placeholder="branches (comma-sep, blank=all)"
-              className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white w-48" />
+            <Input
+              value={branchInput}
+              onChange={e => setBranchInput(e.target.value)}
+              placeholder="branches (comma-sep)"
+              className="w-48"
+            />
 
-            <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value ? new Date(e.target.value).toISOString() : '')}
-              className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white" />
+            <Input
+              type="date"
+              value={expiresAt}
+              onChange={e => setExpiresAt(e.target.value ? new Date(e.target.value).toISOString() : '')}
+              className="w-40"
+            />
 
-            <button type="submit" disabled={submitting || !newServiceId}
-              className="rounded bg-purple-600 px-3 py-1.5 text-sm hover:bg-purple-700 disabled:opacity-50">
-              Grant
-            </button>
-          </div>
-        </form>
+            <Button type="submit" disabled={submitting || !newServiceId}>Grant</Button>
+          </form>
+        </div>
       )}
 
       <div className="flex gap-1">
         {(['out', 'in'] as const).map(t => (
-          <button key={t} onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm rounded ${tab === t ? 'bg-gray-700 text-white' : 'text-gray-500 hover:text-white'}`}>
+          <Button
+            key={t}
+            variant={tab === t ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setTab(t)}
+          >
             {t === 'out' ? `Outgoing (${outgoing.length})` : `Incoming (${incoming.length})`}
-          </button>
+          </Button>
         ))}
       </div>
 
-      <div className="rounded-xl border border-gray-800 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-800 text-gray-400">
-            <tr>
-              <th className="px-4 py-3 text-left">Service</th>
-              <th className="px-4 py-3 text-left">{tab === 'out' ? 'Grantee' : 'Owner'}</th>
-              <th className="px-4 py-3 text-left">Branches</th>
-              <th className="px-4 py-3 text-left">Expires</th>
-              {tab === 'out' && <th className="px-4 py-3 text-left">Actions</th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-800">
-            {currentList.map(g => (
-              <tr key={g.id} className="bg-gray-900">
-                <td className="px-4 py-3 text-white">{g.serviceName}</td>
-                <td className="px-4 py-3 text-gray-400">
-                  {tab === 'out'
-                    ? (g.granteeTeamId
-                      ? <span className="text-blue-400">🏷 {teams.find(t => t.id === g.granteeTeamId)?.name ?? g.granteeTeamId}</span>
-                      : <span className="text-green-400">👤 {g.granteeUserId}</span>)
-                    : g.ownerTeamId
-                  }
-                </td>
-                <td className="px-4 py-3 text-gray-400">
-                  {g.branches?.length ? g.branches.join(', ') : <span className="text-gray-600">all</span>}
-                </td>
-                <td className="px-4 py-3 text-gray-400">
-                  {g.expiresAt ? new Date(g.expiresAt).toLocaleDateString() : <span className="text-gray-600">never</span>}
-                </td>
-                {tab === 'out' && (
-                  <td className="px-4 py-3">
-                    <button onClick={() => revokeGrant(g.id)} className="text-red-500 hover:text-red-400 text-xs">Revoke</button>
-                  </td>
-                )}
-              </tr>
-            ))}
-            {currentList.length === 0 && (
-              <tr><td colSpan={tab === 'out' ? 5 : 4} className="px-4 py-8 text-center text-gray-500">No grants.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Service</TableHead>
+            <TableHead>{tab === 'out' ? 'Grantee' : 'Owner'}</TableHead>
+            <TableHead>Branches</TableHead>
+            <TableHead>Expires</TableHead>
+            {tab === 'out' && <TableHead>Actions</TableHead>}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {currentList.map(g => (
+            <TableRow key={g.id}>
+              <TableCell className="font-medium">{g.serviceName}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {tab === 'out'
+                  ? (g.granteeTeamId
+                    ? <span className="text-blue-400">Team: {teams.find(t => t.id === g.granteeTeamId)?.name ?? g.granteeTeamId}</span>
+                    : <span className="text-green-400">User: {g.granteeUserId}</span>)
+                  : g.ownerTeamId
+                }
+              </TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {g.branches?.length ? g.branches.join(', ') : <span className="text-muted-foreground/50">all</span>}
+              </TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {g.expiresAt ? new Date(g.expiresAt).toLocaleDateString() : <span className="text-muted-foreground/50">never</span>}
+              </TableCell>
+              {tab === 'out' && (
+                <TableCell>
+                  <Button variant="ghost" size="sm" onClick={() => setRevokeTarget(g)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">Revoke</Button>
+                </TableCell>
+              )}
+            </TableRow>
+          ))}
+          {currentList.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={tab === 'out' ? 5 : 4} className="text-center text-muted-foreground">No grants.</TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+
+      <Dialog open={!!revokeTarget} onOpenChange={open => { if (!open) setRevokeTarget(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Revoke Grant</DialogTitle>
+            <DialogDescription>
+              Revoke access to "{revokeTarget?.serviceName}"?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRevokeTarget(null)} disabled={revoking}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmRevoke} disabled={revoking}>
+              {revoking ? 'Revoking…' : 'Revoke'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
