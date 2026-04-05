@@ -189,6 +189,7 @@ A team owner can grant another team (or a specific user) access to one of their 
 | `GET` | `/docs/:service/:branch/llms.txt` | JWT (Bearer/cookie) or read MCP token | LLM-readable summary |
 | `POST` | `/mcp` | read MCP token | MCP JSON-RPC |
 | `GET` | `/mcp` | read MCP token | MCP SSE stream |
+| `GET` | `/health` | — | Health check (used by CI/load balancers) |
 | `GET` | `/api/admin/teams` | JWT (super_admin) | List teams |
 | `POST` | `/api/admin/teams` | JWT (super_admin) | Create team |
 | `GET` | `/api/admin/teams/:id/members` | JWT (owner+) | List members |
@@ -200,6 +201,24 @@ A team owner can grant another team (or a specific user) access to one of their 
 | `GET` | `/api/admin/users` | JWT (super_admin) | List users |
 | `PUT` | `/api/admin/users/:id` | JWT (super_admin) | Update user role/status |
 | `DELETE` | `/api/admin/users/:id` | JWT (super_admin) | Delete user |
+
+## Testing
+
+### Unit / integration tests (API)
+
+```bash
+cd packages/api && pnpm test
+```
+
+### E2E tests (Playwright)
+
+```bash
+cp packages/e2e/.env.e2e.example packages/e2e/.env.e2e
+# Fill in BASE_URL and ADMIN_PASSWORD
+cd packages/e2e && pnpm test
+```
+
+E2E tests cover login, spec upload, catalog browsing, MCP token management, and admin user operations. A CI workflow (`.github/workflows/e2e.yml`) runs them automatically on every push.
 
 ## Tech Stack
 
