@@ -115,6 +115,13 @@ curl -X POST http://your-speculo/api/upload \
 
 可选：在仓库根目录创建 `.speculo-service` 文件来自定义服务名称（默认使用仓库名）。
 
+### 通过 GitLab CI
+
+将本仓库的 `.gitlab-ci-template.yml` 复制到你的服务仓库并命名为 `.gitlab-ci.yml`，然后配置 CI/CD 变量：
+
+- **Variable** `SPECULO_URL` — 你的 Speculo 实例地址
+- **Masked secret** `SPECULO_TOKEN` — write 权限 MCP Token
+
 ## 连接 MCP 客户端
 
 1. 登录 Speculo，进入 **MCP Tokens**
@@ -146,23 +153,72 @@ curl -X POST http://your-speculo/api/upload \
 | `get_schema_detail` | 获取某个组件 Schema |
 | `get_service_markdown` | 以 Markdown 格式返回整个服务规范 |
 
+## 团队管理
+
+团队是权限边界：每个服务归属于一个团队，用户也归属于团队。超级管理员管理所有团队；团队所有者管理本团队的成员、服务和授权。
+
+### 角色说明
+
+| 角色 | 范围 | 权限 |
+|---|---|---|
+| `super_admin` | 全局 | 管理所有团队、用户、服务 |
+| `team_owner` | 团队 | 管理成员、服务、跨团队授权 |
+| `team_member` | 团队 | 访问团队所拥有的所有服务 |
+| `guest` | 显式授权 | 仅访问被明确授权的服务 |
+
+### 跨团队授权
+
+团队所有者可以向另一个团队（或特定用户）授予本团队某个服务的访问权限，支持限定特定分支和设置过期时间。在 `/admin/teams/:id/grants` 页面管理授权。
+
+## 测试
+
+### 单元 / 集成测试（API）
+
+```bash
+cd packages/api && pnpm test
+```
+
+### E2E 测试（Playwright）
+
+```bash
+cp packages/e2e/.env.e2e.example packages/e2e/.env.e2e
+# 填写 BASE_URL 和 ADMIN_PASSWORD
+cd packages/e2e && pnpm test
+```
+
+E2E 测试覆盖登录、规范上传、目录浏览、MCP Token 管理和管理员用户操作。CI 工作流（`.github/workflows/e2e.yml`）会在每次推送时自动运行。
+
 ## API 参考
 
 | 方法 | 路径 | 认证 | 说明 |
 |---|---|---|---|
-| `POST` | `/auth/register` | — | 注册账号 |
+| `POST` | `/auth/register` | JWT (super_admin) | 创建账号 |
 | `POST` | `/auth/login` | — | 获取 JWT |
+| `POST` | `/auth/logout` | — | 清除会话 Cookie |
+| `GET` | `/api/me` | JWT | 当前用户信息及所属团队 |
 | `GET` | `/api/tokens` | JWT | 列出 MCP Token |
 | `POST` | `/api/tokens` | JWT | 创建 MCP Token |
 | `DELETE` | `/api/tokens/:id` | JWT | 吊销 MCP Token |
 | `POST` | `/api/upload` | JWT 或 write MCP Token | 上传规范 |
-| `GET` | `/api/catalog` | JWT | 列出所有服务 |
-| `GET` | `/api/search?q=` | JWT | 搜索端点 |
+| `GET` | `/api/catalog` | JWT | 列出所有服务（含团队信息） |
+| `GET` | `/api/search?q=` | JWT | 全文搜索端点（tsvector） |
 | `GET` | `/api/specs/:service/:branch/openapi.json` | JWT | 原始规范 JSON |
-| `GET` | `/docs/:service/:branch` | JWT | Scalar 文档 UI |
-| `GET` | `/docs/:service/:branch/llms.txt` | — | LLM 可读摘要 |
+| `GET` | `/docs/:service/:branch` | JWT cookie | Scalar 文档 UI |
+| `GET` | `/docs/:service/:branch/llms.txt` | JWT (Bearer/cookie) 或 read MCP Token | LLM 可读摘要 |
 | `POST` | `/mcp` | read MCP Token | MCP JSON-RPC |
 | `GET` | `/mcp` | read MCP Token | MCP SSE 流 |
+| `GET` | `/health` | — | 健康检查（供 CI / 负载均衡使用） |
+| `GET` | `/api/admin/teams` | JWT (super_admin) | 列出团队 |
+| `POST` | `/api/admin/teams` | JWT (super_admin) | 创建团队 |
+| `GET` | `/api/admin/teams/:id/members` | JWT (owner+) | 列出成员 |
+| `POST` | `/api/admin/teams/:id/members` | JWT (owner+) | 添加成员 |
+| `GET` | `/api/admin/teams/:id/services` | JWT (owner+) | 列出团队服务 |
+| `GET` | `/api/admin/teams/:id/grants` | JWT (owner+) | 列出授权 |
+| `POST` | `/api/admin/teams/:id/grants` | JWT (owner+) | 创建授权 |
+| `DELETE` | `/api/admin/grants/:id` | JWT (owner+) | 撤销授权 |
+| `GET` | `/api/admin/users` | JWT (super_admin) | 列出用户 |
+| `PUT` | `/api/admin/users/:id` | JWT (super_admin) | 更新用户角色/状态 |
+| `DELETE` | `/api/admin/users/:id` | JWT (super_admin) | 删除用户 |
 
 ## 技术栈
 
