@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api, type Grant, type Team, type Service } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +16,7 @@ import {
 
 export default function TeamGrants() {
   const { id } = useParams<{ id: string }>()
+  const { t } = useTranslation()
   const [outgoing, setOutgoing] = useState<Grant[]>([])
   const [incoming, setIncoming] = useState<Grant[]>([])
   const [teams, setTeams] = useState<Team[]>([])
@@ -45,7 +47,7 @@ export default function TeamGrants() {
       setServices(sRes.services)
       try {
         const tRes = await api.admin.teams.list()
-        setTeams(tRes.teams.filter(t => t.id !== id))
+        setTeams(tRes.teams.filter(tm => tm.id !== id))
       } catch {
         // not super_admin — teams list unavailable
       }
@@ -98,26 +100,26 @@ export default function TeamGrants() {
     }
   }
 
-  if (loading) return <p className="text-muted-foreground">Loading…</p>
+  if (loading) return <p className="text-muted-foreground">{t('common.loading')}</p>
 
   const currentList = tab === 'out' ? outgoing : incoming
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/admin/teams" className="text-muted-foreground hover:text-foreground text-sm">← Teams</Link>
-        <h1 className="text-2xl font-semibold">Cross-Team Grants</h1>
+        <Link to="/admin/teams" className="text-muted-foreground hover:text-foreground text-sm">{t('admin.teamGrants.backToTeams')}</Link>
+        <h1 className="text-2xl font-semibold">{t('admin.teamGrants.title')}</h1>
       </div>
 
       {error && <p className="text-destructive text-sm">{error}</p>}
 
       {tab === 'out' && (
         <div className="rounded-xl border border-border bg-card p-4 space-y-3">
-          <p className="text-sm font-medium">New Grant</p>
+          <p className="text-sm font-medium">{t('admin.teamGrants.newGrant')}</p>
           <form onSubmit={createGrant} className="flex flex-wrap gap-2">
             <Select value={newServiceId} onValueChange={setNewServiceId}>
               <SelectTrigger className="w-[160px]">
-                <SelectValue placeholder="Select service…" />
+                <SelectValue placeholder={t('admin.teamGrants.selectServicePlaceholder')} />
               </SelectTrigger>
               <SelectContent>
                 {services.map(s => <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>)}
@@ -137,10 +139,10 @@ export default function TeamGrants() {
             {granteeType === 'team' ? (
               <Select value={granteeTeamId} onValueChange={setGranteeTeamId}>
                 <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="Select team…" />
+                  <SelectValue placeholder={t('admin.teamGrants.selectTeamPlaceholder')} />
                 </SelectTrigger>
                 <SelectContent>
-                  {teams.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                  {teams.map(tm => <SelectItem key={tm.id} value={tm.id}>{tm.name}</SelectItem>)}
                 </SelectContent>
               </Select>
             ) : (
@@ -166,20 +168,22 @@ export default function TeamGrants() {
               className="w-40"
             />
 
-            <Button type="submit" disabled={submitting || !newServiceId}>Grant</Button>
+            <Button type="submit" disabled={submitting || !newServiceId}>
+              {submitting ? t('admin.teamGrants.granting') : t('admin.teamGrants.grantButton')}
+            </Button>
           </form>
         </div>
       )}
 
       <div className="flex gap-1">
-        {(['out', 'in'] as const).map(t => (
+        {(['out', 'in'] as const).map(tabKey => (
           <Button
-            key={t}
-            variant={tab === t ? 'secondary' : 'ghost'}
+            key={tabKey}
+            variant={tab === tabKey ? 'secondary' : 'ghost'}
             size="sm"
-            onClick={() => setTab(t)}
+            onClick={() => setTab(tabKey)}
           >
-            {t === 'out' ? `Outgoing (${outgoing.length})` : `Incoming (${incoming.length})`}
+            {tabKey === 'out' ? t('admin.teamGrants.outgoing', { count: outgoing.length }) : t('admin.teamGrants.incoming', { count: incoming.length })}
           </Button>
         ))}
       </div>
@@ -187,11 +191,11 @@ export default function TeamGrants() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Service</TableHead>
-            <TableHead>{tab === 'out' ? 'Grantee' : 'Owner'}</TableHead>
-            <TableHead>Branches</TableHead>
-            <TableHead>Expires</TableHead>
-            {tab === 'out' && <TableHead>Actions</TableHead>}
+            <TableHead>{t('admin.teamGrants.serviceHead')}</TableHead>
+            <TableHead>{tab === 'out' ? t('admin.teamGrants.teamHead') : t('admin.teamGrants.ownerHead')}</TableHead>
+            <TableHead>{t('admin.teamGrants.branchesHead')}</TableHead>
+            <TableHead>{t('admin.teamGrants.expiresHead')}</TableHead>
+            {tab === 'out' && <TableHead>{t('admin.teamGrants.actionsHead')}</TableHead>}
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -201,27 +205,27 @@ export default function TeamGrants() {
               <TableCell className="text-muted-foreground">
                 {tab === 'out'
                   ? (g.granteeTeamId
-                    ? <span className="text-blue-400">Team: {teams.find(t => t.id === g.granteeTeamId)?.name ?? g.granteeTeamId}</span>
-                    : <span className="text-green-400">User: {g.granteeUserId}</span>)
+                    ? <span className="text-blue-400">{t('admin.teamGrants.tabTeam')} {teams.find(tm => tm.id === g.granteeTeamId)?.name ?? g.granteeTeamId}</span>
+                    : <span className="text-green-400">{t('admin.teamGrants.tabUser')} {g.granteeUserId}</span>)
                   : g.ownerTeamId
                 }
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">
-                {g.branches?.length ? g.branches.join(', ') : <span className="text-muted-foreground/50">all</span>}
+                {g.branches?.length ? g.branches.join(', ') : <span className="text-muted-foreground/50">{t('admin.teamGrants.allBranches')}</span>}
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">
-                {g.expiresAt ? new Date(g.expiresAt).toLocaleDateString() : <span className="text-muted-foreground/50">never</span>}
+                {g.expiresAt ? new Date(g.expiresAt).toLocaleDateString() : <span className="text-muted-foreground/50">{t('admin.teamGrants.noExpiry')}</span>}
               </TableCell>
               {tab === 'out' && (
                 <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => setRevokeTarget(g)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">Revoke</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setRevokeTarget(g)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">{t('admin.teamGrants.revokeButton')}</Button>
                 </TableCell>
               )}
             </TableRow>
           ))}
           {currentList.length === 0 && (
             <TableRow>
-              <TableCell colSpan={tab === 'out' ? 5 : 4} className="text-center text-muted-foreground">No grants.</TableCell>
+              <TableCell colSpan={tab === 'out' ? 5 : 4} className="text-center text-muted-foreground">{t('admin.teamGrants.noGrants')}</TableCell>
             </TableRow>
           )}
         </TableBody>
@@ -230,15 +234,15 @@ export default function TeamGrants() {
       <Dialog open={!!revokeTarget} onOpenChange={open => { if (!open) setRevokeTarget(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Revoke Grant</DialogTitle>
+            <DialogTitle>{t('admin.teamGrants.revokeTitle')}</DialogTitle>
             <DialogDescription>
-              Revoke access to "{revokeTarget?.serviceName}"?
+              {t('admin.teamGrants.revokeConfirm')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRevokeTarget(null)} disabled={revoking}>Cancel</Button>
+            <Button variant="outline" onClick={() => setRevokeTarget(null)} disabled={revoking}>{t('admin.teamGrants.cancel')}</Button>
             <Button variant="destructive" onClick={confirmRevoke} disabled={revoking}>
-              {revoking ? 'Revoking…' : 'Revoke'}
+              {revoking ? t('admin.teamGrants.revoking') : t('admin.teamGrants.revoke')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import {
   LayoutGrid,
   Upload,
@@ -12,6 +13,7 @@ import {
   ChevronUp,
   KeyRound,
   LogOut,
+  Globe,
 } from 'lucide-react'
 import {
   DropdownMenu,
@@ -26,27 +28,28 @@ import { api } from '@/lib/api'
 
 type NavItem = {
   icon: React.ReactNode
-  label: string
+  labelKey: string
   to: string
   match?: (path: string) => boolean
 }
 
 const NAV_MAIN: NavItem[] = [
-  { icon: <LayoutGrid size={14} />, label: '服务目录', to: '/' },
-  { icon: <Upload size={14} />, label: '导入 Spec', to: '/import' },
-  { icon: <GitCompare size={14} />, label: '版本对比', to: '/diff' },
+  { icon: <LayoutGrid size={14} />, labelKey: 'sidebar.catalog', to: '/' },
+  { icon: <Upload size={14} />, labelKey: 'sidebar.importSpec', to: '/import' },
+  { icon: <GitCompare size={14} />, labelKey: 'sidebar.versionDiff', to: '/diff' },
 ]
 
 const NAV_ADMIN_OWNER: NavItem[] = [
-  { icon: <Users size={14} />, label: '团队 & 用户', to: '/admin/teams', match: p => p.startsWith('/admin/teams') || p.startsWith('/admin/users') },
+  { icon: <Users size={14} />, labelKey: 'sidebar.teamsUsers', to: '/admin/teams', match: p => p.startsWith('/admin/teams') || p.startsWith('/admin/users') },
 ]
 
 const NAV_ADMIN_SUPER: NavItem[] = [
-  { icon: <ScrollText size={14} />, label: '审计日志', to: '/admin/audit-logs' },
-  { icon: <Webhook size={14} />, label: 'Webhooks', to: '/admin/webhooks' },
+  { icon: <ScrollText size={14} />, labelKey: 'sidebar.auditLogs', to: '/admin/audit-logs' },
+  { icon: <Webhook size={14} />, labelKey: 'sidebar.webhooks', to: '/admin/webhooks' },
 ]
 
 function NavLink({ item, activePath }: { item: NavItem; activePath: string }) {
+  const { t } = useTranslation()
   const active = item.match ? item.match(activePath) : activePath === item.to
   return (
     <Link
@@ -58,7 +61,7 @@ function NavLink({ item, activePath }: { item: NavItem; activePath: string }) {
       }`}
     >
       {item.icon}
-      <span>{item.label}</span>
+      <span>{t(item.labelKey)}</span>
     </Link>
   )
 }
@@ -67,6 +70,7 @@ export default function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const { t, i18n } = useTranslation()
 
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('')
@@ -83,6 +87,12 @@ export default function Sidebar() {
     localStorage.removeItem('speculo_role')
     await fetch('/auth/logout', { method: 'POST' }).catch(() => {})
     navigate('/login')
+  }
+
+  function toggleLanguage() {
+    const newLang = i18n.language === 'zh' ? 'en' : 'zh'
+    i18n.changeLanguage(newLang)
+    localStorage.setItem('speculo_lang', newLang)
   }
 
   return (
@@ -105,7 +115,7 @@ export default function Sidebar() {
           <>
             <div className="px-2.5 pt-4 pb-1">
               <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                管理
+                {t('sidebar.adminSection')}
               </p>
             </div>
             {(isSuperAdmin || isTeamOwner) && NAV_ADMIN_OWNER.map(item => (
@@ -126,7 +136,7 @@ export default function Sidebar() {
           aria-label="Toggle theme"
         >
           {theme === 'dark' ? <Sun size={16} /> : <Moon size={16} />}
-          <span>{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
+          <span>{theme === 'dark' ? t('sidebar.lightMode') : t('sidebar.darkMode')}</span>
         </button>
       </div>
 
@@ -155,12 +165,17 @@ export default function Sidebar() {
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/settings/tokens')}>
               <KeyRound size={13} className="mr-2" />
-              MCP Tokens
+              {t('sidebar.mcpTokens')}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={toggleLanguage}>
+              <Globe size={13} className="mr-2" />
+              {t('sidebar.switchLang')}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={logout} className="text-destructive focus:text-destructive">
               <LogOut size={13} className="mr-2" />
-              退出登录
+              {t('sidebar.signOut')}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

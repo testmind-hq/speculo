@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
+import './lib/i18n.js'
 import App from './App.js'
 import { ThemeProvider } from './components/ThemeProvider.js'
 import './index.css'

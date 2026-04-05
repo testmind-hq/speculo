@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/lib/api'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,7 @@ import {
 type Token = { id: string; name: string; scope: string; prefix: string; lastUsedAt: string | null; createdAt: string }
 
 export default function Tokens() {
+  const { t } = useTranslation()
   const [tokens, setTokens] = useState<Token[]>([])
   const [name, setName] = useState('')
   const [scope, setScope] = useState<'read' | 'write'>('read')
@@ -40,13 +42,13 @@ export default function Tokens() {
     e.preventDefault()
     setError('')
     try {
-      const t = await api.tokens.create(name, scope)
-      setNewToken(t.token)
-      setNewTokenScope(t.scope)
+      const tk = await api.tokens.create(name, scope)
+      setNewToken(tk.token)
+      setNewTokenScope(tk.scope)
       setName('')
       load()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Failed')
+      setError(err instanceof Error ? err.message : t('tokens.failed'))
     }
   }
 
@@ -55,7 +57,7 @@ export default function Tokens() {
       await api.tokens.delete(id)
       load()
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Revoke failed')
+      setError(err instanceof Error ? err.message : t('tokens.revokeFailed'))
     }
   }
 
@@ -70,14 +72,14 @@ export default function Tokens() {
 
   return (
     <div className="max-w-2xl space-y-8">
-      <h1 className="text-2xl font-semibold">MCP Tokens</h1>
+      <h1 className="text-2xl font-semibold">{t('tokens.title')}</h1>
 
       <form onSubmit={create} className="flex gap-3">
         <Input
           value={name}
           onChange={e => setName(e.target.value)}
           required
-          placeholder="Token name (e.g. Cursor)"
+          placeholder={t('tokens.namePlaceholder')}
           className="flex-1"
         />
         <Select value={scope} onValueChange={v => setScope(v as 'read' | 'write')}>
@@ -89,7 +91,7 @@ export default function Tokens() {
             <SelectItem value="write">write</SelectItem>
           </SelectContent>
         </Select>
-        <Button type="submit">Create</Button>
+        <Button type="submit">{t('tokens.create')}</Button>
       </form>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -97,11 +99,11 @@ export default function Tokens() {
       {newToken && (
         <Alert className="border-amber-700 bg-amber-950/50">
           <AlertDescription className="space-y-3">
-            <p className="font-medium text-amber-400">Token created — copy it now, it won't be shown again</p>
+            <p className="font-medium text-amber-400">{t('tokens.createdAlert')}</p>
             <code className="block break-all rounded bg-background p-2 text-xs text-green-400">{newToken}</code>
             {newTokenScope === 'read' && (
               <>
-                <p className="text-xs text-muted-foreground">Claude Desktop / Cursor config:</p>
+                <p className="text-xs text-muted-foreground">{t('tokens.configNote')}</p>
                 <pre className="overflow-x-auto rounded bg-background p-2 text-xs text-foreground">{mcpConfig}</pre>
               </>
             )}
@@ -112,35 +114,35 @@ export default function Tokens() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Scope</TableHead>
-            <TableHead>Prefix</TableHead>
-            <TableHead>Last used</TableHead>
+            <TableHead>{t('tokens.nameHead')}</TableHead>
+            <TableHead>{t('tokens.scopeHead')}</TableHead>
+            <TableHead>{t('tokens.prefixHead')}</TableHead>
+            <TableHead>{t('tokens.lastUsedHead')}</TableHead>
             <TableHead></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {tokens.map(t => (
-            <TableRow key={t.id}>
-              <TableCell className="font-medium">{t.name}</TableCell>
+          {tokens.map(tk => (
+            <TableRow key={tk.id}>
+              <TableCell className="font-medium">{tk.name}</TableCell>
               <TableCell>
-                <Badge variant="secondary">{t.scope}</Badge>
+                <Badge variant="secondary">{tk.scope}</Badge>
               </TableCell>
-              <TableCell className="text-muted-foreground text-xs font-mono">{t.prefix}…</TableCell>
+              <TableCell className="text-muted-foreground text-xs font-mono">{tk.prefix}…</TableCell>
               <TableCell className="text-muted-foreground text-xs">
-                {t.lastUsedAt ? new Date(t.lastUsedAt).toLocaleDateString() : 'never'}
+                {tk.lastUsedAt ? new Date(tk.lastUsedAt).toLocaleDateString() : t('tokens.neverUsed')}
               </TableCell>
               <TableCell>
-                <Button variant="ghost" size="sm" onClick={() => revoke(t.id)}
+                <Button variant="ghost" size="sm" onClick={() => revoke(tk.id)}
                   className="text-destructive hover:text-destructive">
-                  Revoke
+                  {t('tokens.revoke')}
                 </Button>
               </TableCell>
             </TableRow>
           ))}
           {!tokens.length && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground">No tokens yet.</TableCell>
+              <TableCell colSpan={5} className="text-center text-muted-foreground">{t('tokens.noTokens')}</TableCell>
             </TableRow>
           )}
         </TableBody>

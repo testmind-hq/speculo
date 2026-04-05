@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api, type Team } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/dialog'
 
 export default function AdminTeams() {
+  const { t: tr } = useTranslation()
   const [teams, setTeams] = useState<Team[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -53,7 +55,7 @@ export default function AdminTeams() {
     setDeleting(true)
     try {
       await api.admin.teams.delete(deleteTarget.id)
-      setTeams(t => t.filter(x => x.id !== deleteTarget.id))
+      setTeams(ts => ts.filter(x => x.id !== deleteTarget.id))
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e))
     } finally {
@@ -62,12 +64,12 @@ export default function AdminTeams() {
     }
   }
 
-  if (loading) return <p className="text-muted-foreground">Loading…</p>
+  if (loading) return <p className="text-muted-foreground">{tr('common.loading')}</p>
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Teams</h1>
+        <h1 className="text-2xl font-semibold">{tr('admin.teams.title')}</h1>
         <form onSubmit={createTeam} className="flex gap-2">
           <Input
             value={newName}
@@ -75,7 +77,7 @@ export default function AdminTeams() {
             placeholder="team-name"
             className="w-40"
           />
-          <Button type="submit" disabled={creating}>+ Create</Button>
+          <Button type="submit" disabled={creating}>{tr('admin.teams.createButton')}</Button>
         </form>
       </div>
 
@@ -84,29 +86,29 @@ export default function AdminTeams() {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Display Name</TableHead>
-            <TableHead>Type</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>{tr('admin.teams.nameHead')}</TableHead>
+            <TableHead>{tr('admin.teams.displayNameHead')}</TableHead>
+            <TableHead>{tr('admin.teams.typeHead')}</TableHead>
+            <TableHead>{tr('admin.teams.actionsHead')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {teams.map(t => (
-            <TableRow key={t.id}>
-              <TableCell className="font-medium">{t.name}</TableCell>
-              <TableCell className="text-muted-foreground">{t.displayName ?? '—'}</TableCell>
+          {teams.map(team => (
+            <TableRow key={team.id}>
+              <TableCell className="font-medium">{team.name}</TableCell>
+              <TableCell className="text-muted-foreground">{team.displayName ?? '—'}</TableCell>
               <TableCell>
-                {t.isDefault
-                  ? <Badge variant="secondary">default</Badge>
+                {team.isDefault
+                  ? <Badge variant="secondary">{tr('admin.teams.defaultBadge')}</Badge>
                   : <span className="text-muted-foreground">—</span>}
               </TableCell>
               <TableCell>
                 <div className="flex gap-3 text-xs">
-                  <Link to={`/admin/teams/${t.id}/members`} className="text-violet-400 hover:text-violet-300">Members</Link>
-                  <Link to={`/admin/teams/${t.id}/services`} className="text-violet-400 hover:text-violet-300">Services</Link>
-                  <Link to={`/admin/teams/${t.id}/grants`} className="text-violet-400 hover:text-violet-300">Grants</Link>
-                  {t.isDeletable && (
-                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(t)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">Delete</Button>
+                  <Link to={`/admin/teams/${team.id}/members`} className="text-violet-400 hover:text-violet-300">{tr('admin.teams.membersLink')}</Link>
+                  <Link to={`/admin/teams/${team.id}/services`} className="text-violet-400 hover:text-violet-300">{tr('admin.teams.servicesLink')}</Link>
+                  <Link to={`/admin/teams/${team.id}/grants`} className="text-violet-400 hover:text-violet-300">{tr('admin.teams.grantsLink')}</Link>
+                  {team.isDeletable && (
+                    <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(team)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">{tr('admin.teams.deleteButton')}</Button>
                   )}
                 </div>
               </TableCell>
@@ -118,15 +120,15 @@ export default function AdminTeams() {
       <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Team</DialogTitle>
+            <DialogTitle>{tr('admin.teams.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Delete team "{deleteTarget?.name}"? This cannot be undone.
+              {tr('admin.teams.deleteConfirm', { name: deleteTarget?.name ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>{tr('admin.teams.cancel')}</Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
-              {deleting ? 'Deleting…' : 'Delete'}
+              {deleting ? tr('admin.teams.deleting') : tr('admin.teams.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
