@@ -1,6 +1,17 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { api, type TeamMember } from '../../lib/api.js'
+import { api, type TeamMember } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select'
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table'
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from '@/components/ui/dialog'
 
 export default function TeamMembers() {
   const { id } = useParams<{ id: string }>()
@@ -10,6 +21,8 @@ export default function TeamMembers() {
   const [userId, setUserId] = useState('')
   const [selectedRole, setSelectedRole] = useState<'owner' | 'member'>('member')
   const [adding, setAdding] = useState(false)
+  const [removeTarget, setRemoveTarget] = useState<TeamMember | null>(null)
+  const [removing, setRemoving] = useState(false)
 
   async function load() {
     if (!id) return
@@ -50,88 +63,107 @@ export default function TeamMembers() {
     }
   }
 
-  async function removeMember(memberId: string) {
-    if (!id || !confirm('Remove this member?')) return
+  async function confirmRemove() {
+    if (!id || !removeTarget) return
+    setRemoving(true)
     try {
-      await api.admin.members.remove(id, memberId)
-      setMembers(ms => ms.filter(m => m.userId !== memberId))
+      await api.admin.members.remove(id, removeTarget.userId)
+      setMembers(ms => ms.filter(m => m.userId !== removeTarget.userId))
     } catch (e: any) {
       setError(e.message)
+    } finally {
+      setRemoving(false)
+      setRemoveTarget(null)
     }
   }
 
-  if (loading) return <p className="text-gray-500">Loading…</p>
+  if (loading) return <p className="text-muted-foreground">Loading…</p>
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/admin/teams" className="text-gray-500 hover:text-white text-sm">← Teams</Link>
+        <Link to="/admin/teams" className="text-muted-foreground hover:text-foreground text-sm">← Teams</Link>
         <h1 className="text-2xl font-semibold">Team Members</h1>
       </div>
 
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-destructive text-sm">{error}</p>}
 
       <form onSubmit={addMember} className="flex gap-2 items-center">
-        <input
+        <Input
           type="text"
           placeholder="User ID"
           value={userId}
           onChange={e => setUserId(e.target.value)}
-          className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white placeholder-gray-500 w-72"
+          className="w-72"
         />
-        <select
-          value={selectedRole}
-          onChange={e => setSelectedRole(e.target.value as 'owner' | 'member')}
-          className="rounded border border-gray-700 bg-gray-800 px-3 py-1.5 text-sm text-white"
-        >
-          <option value="member">Member</option>
-          <option value="owner">Owner</option>
-        </select>
-        <button
-          type="submit"
-          disabled={adding || !userId.trim()}
-          className="rounded bg-purple-600 px-3 py-1.5 text-sm hover:bg-purple-700 disabled:opacity-50"
-        >
-          + Add
-        </button>
+        <Select value={selectedRole} onValueChange={v => setSelectedRole(v as 'owner' | 'member')}>
+          <SelectTrigger className="w-[110px]">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="member">Member</SelectItem>
+            <SelectItem value="owner">Owner</SelectItem>
+          </SelectContent>
+        </Select>
+        <Button type="submit" disabled={adding || !userId.trim()}>+ Add</Button>
       </form>
 
-      <div className="rounded-xl border border-gray-800 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-800 text-gray-400">
-            <tr>
-              <th className="px-4 py-3 text-left">Email</th>
-              <th className="px-4 py-3 text-left">Role</th>
-              <th className="px-4 py-3 text-left">Joined</th>
-              <th className="px-4 py-3 text-left">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-800">
-            {members.map(m => (
-              <tr key={m.id} className="bg-gray-900">
-                <td className="px-4 py-3 text-white">{m.email}</td>
-                <td className="px-4 py-3">
-                  <select
-                    value={m.role}
-                    onChange={e => updateRole(m.userId, e.target.value as 'owner' | 'member')}
-                    className="rounded border border-gray-700 bg-gray-800 px-2 py-1 text-xs text-white"
-                  >
-                    <option value="owner">Owner</option>
-                    <option value="member">Member</option>
-                  </select>
-                </td>
-                <td className="px-4 py-3 text-gray-400">{new Date(m.joinedAt).toLocaleDateString()}</td>
-                <td className="px-4 py-3">
-                  <button onClick={() => removeMember(m.userId)} className="text-red-500 hover:text-red-400 text-xs">Remove</button>
-                </td>
-              </tr>
-            ))}
-            {members.length === 0 && (
-              <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">No members yet.</td></tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Email</TableHead>
+            <TableHead>Role</TableHead>
+            <TableHead>Joined</TableHead>
+            <TableHead>Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {members.map(m => (
+            <TableRow key={m.id}>
+              <TableCell>{m.email}</TableCell>
+              <TableCell>
+                <Select value={m.role} onValueChange={v => updateRole(m.userId, v as 'owner' | 'member')}>
+                  <SelectTrigger className="h-7 w-[100px] text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="owner">Owner</SelectItem>
+                    <SelectItem value="member">Member</SelectItem>
+                  </SelectContent>
+                </Select>
+              </TableCell>
+              <TableCell className="text-muted-foreground text-sm">
+                {new Date(m.joinedAt).toLocaleDateString()}
+              </TableCell>
+              <TableCell>
+                <Button variant="ghost" size="sm" onClick={() => setRemoveTarget(m)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">Remove</Button>
+              </TableCell>
+            </TableRow>
+          ))}
+          {members.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={4} className="text-center text-muted-foreground">No members yet.</TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+
+      <Dialog open={!!removeTarget} onOpenChange={open => { if (!open) setRemoveTarget(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Member</DialogTitle>
+            <DialogDescription>
+              Remove "{removeTarget?.email}" from this team?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemoveTarget(null)} disabled={removing}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmRemove} disabled={removing}>
+              {removing ? 'Removing…' : 'Remove'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
