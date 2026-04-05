@@ -137,6 +137,12 @@
     },
     "users": {
       "title": "Users",
+      "createButton": "+ Create User",
+      "createTitle": "Create User",
+      "createEmailLabel": "Email",
+      "createPasswordLabel": "Password",
+      "creating": "Creating…",
+      "create": "Create",
       "emailHead": "Email",
       "roleHead": "Role",
       "teamsHead": "Teams",

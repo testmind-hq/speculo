@@ -1,8 +1,13 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Hono } from 'hono'
 
+const mockFindFirst = vi.fn()
+
 vi.mock('../db/index.js', () => ({
   db: {
+    query: {
+      users: { findFirst: mockFindFirst },
+    },
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue([]),
@@ -50,7 +55,8 @@ describe('uploadAuth middleware', () => {
     expect(res.status).toBe(401)
   })
 
-  it('accepts a valid JWT and sets userId', async () => {
+  it('accepts a valid JWT for a super_admin user', async () => {
+    mockFindFirst.mockResolvedValueOnce({ role: 'super_admin', isActive: true })
     const { sign } = await import('hono/jwt')
     const token = await sign(
       { userId: 'user-1', exp: Math.floor(Date.now() / 1000) + 3600 },
@@ -67,6 +73,52 @@ describe('uploadAuth middleware', () => {
     expect(res.status).toBe(200)
     const body = await res.json() as { userId: string }
     expect(body.userId).toBe('user-1')
+  })
+
+  it('accepts a valid JWT for a team_owner user', async () => {
+    mockFindFirst.mockResolvedValueOnce({ role: 'team_owner', isActive: true })
+    const { sign } = await import('hono/jwt')
+    const token = await sign(
+      { userId: 'owner-1', exp: Math.floor(Date.now() / 1000) + 3600 },
+      process.env.JWT_SECRET!
+    )
+    const app = new Hono()
+    app.use('/upload', uploadAuth)
+    app.post('/upload', (c) => c.json({ userId: c.get('userId') }))
+
+    const res = await app.request('/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    expect(res.status).toBe(200)
+  })
+
+  it('rejects a valid JWT for a guest or team_member user with 403', async () => {
+    mockFindFirst.mockResolvedValueOnce({ role: 'guest', isActive: true })
+    const { sign } = await import('hono/jwt')
+    const token = await sign(
+      { userId: 'guest-1', exp: Math.floor(Date.now() / 1000) + 3600 },
+      process.env.JWT_SECRET!
+    )
+    const res = await makeApp().request('/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    expect(res.status).toBe(403)
+  })
+
+  it('rejects an inactive user JWT with 401', async () => {
+    mockFindFirst.mockResolvedValueOnce({ role: 'super_admin', isActive: false })
+    const { sign } = await import('hono/jwt')
+    const token = await sign(
+      { userId: 'disabled-1', exp: Math.floor(Date.now() / 1000) + 3600 },
+      process.env.JWT_SECRET!
+    )
+    const res = await makeApp().request('/upload', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    expect(res.status).toBe(401)
   })
 
   it('accepts a valid write-scope MCP token', async () => {

@@ -4,6 +4,7 @@ import { eq, sql } from 'drizzle-orm'
 import { randomBytes } from 'node:crypto'
 import { db } from './db/index.js'
 import { users, teams, teamMembers } from './db/schema.js'
+import { env } from './env.js'
 
 // Works in both dev (cwd = packages/api/) and Docker (cwd = /app)
 const MIGRATIONS_FOLDER = 'src/db/migrations'
@@ -37,7 +38,7 @@ async function bootstrapAdminUser() {
 
   if (Number(count) > 0) return
 
-  const password = randomBytes(16).toString('base64url')
+  const password = env.ADMIN_PASSWORD ?? randomBytes(16).toString('base64url')
   const passwordHash = await hash(password, 10)
 
   const [admin] = await db.insert(users)
@@ -58,7 +59,11 @@ async function bootstrapAdminUser() {
   console.log('========================================')
   console.log('Default admin account created:')
   console.log('  Email:    admin@example.com')
-  console.log(`  Password: ${password}`)
-  console.log('Change this password after first login.')
+  if (env.ADMIN_PASSWORD) {
+    console.log('  Password: (set via ADMIN_PASSWORD env var)')
+  } else {
+    console.log(`  Password: ${password}`)
+    console.log('Change this password after first login.')
+  }
   console.log('========================================')
 }

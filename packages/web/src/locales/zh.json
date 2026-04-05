@@ -137,6 +137,12 @@
     },
     "users": {
       "title": "用户",
+      "createButton": "+ 创建用户",
+      "createTitle": "创建用户",
+      "createEmailLabel": "邮箱",
+      "createPasswordLabel": "密码",
+      "creating": "创建中…",
+      "create": "创建",
       "emailHead": "邮箱",
       "roleHead": "角色",
       "teamsHead": "团队",
