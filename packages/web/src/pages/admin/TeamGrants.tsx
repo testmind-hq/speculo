@@ -173,15 +173,14 @@ export default function TeamGrants() {
 
       <div className="flex gap-1">
         {(['out', 'in'] as const).map(t => (
-          <button
+          <Button
             key={t}
+            variant={tab === t ? 'secondary' : 'ghost'}
+            size="sm"
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm rounded-md transition-colors ${
-              tab === t ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
-            }`}
           >
             {t === 'out' ? `Outgoing (${outgoing.length})` : `Incoming (${incoming.length})`}
-          </button>
+          </Button>
         ))}
       </div>
 
@@ -202,8 +201,8 @@ export default function TeamGrants() {
               <TableCell className="text-muted-foreground">
                 {tab === 'out'
                   ? (g.granteeTeamId
-                    ? <span className="text-blue-400">🏷 {teams.find(t => t.id === g.granteeTeamId)?.name ?? g.granteeTeamId}</span>
-                    : <span className="text-green-400">👤 {g.granteeUserId}</span>)
+                    ? <span className="text-blue-400">Team: {teams.find(t => t.id === g.granteeTeamId)?.name ?? g.granteeTeamId}</span>
+                    : <span className="text-green-400">User: {g.granteeUserId}</span>)
                   : g.ownerTeamId
                 }
               </TableCell>

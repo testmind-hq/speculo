@@ -17,7 +17,11 @@ export default function TeamServices() {
   const [error, setError] = useState('')
   const [removeTarget, setRemoveTarget] = useState<Pick<Service, 'id' | 'name' | 'displayName'> | null>(null)
   const [removing, setRemoving] = useState(false)
-  const isSuperAdmin = localStorage.getItem('speculo_role') === 'super_admin'
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+
+  useEffect(() => {
+    api.me().then(me => setIsSuperAdmin(me.role === 'super_admin')).catch(() => {})
+  }, [])
 
   async function load() {
     if (!id) return
