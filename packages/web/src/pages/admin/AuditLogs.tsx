@@ -26,7 +26,7 @@ export default function AuditLogs() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const [actionFilter, setActionFilter] = useState('')
+  const [actionFilter, setActionFilter] = useState('all')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
   const [appliedAction, setAppliedAction] = useState('')
@@ -54,7 +54,7 @@ export default function AuditLogs() {
 
   function handleApply() {
     setPage(1)
-    setAppliedAction(actionFilter)
+    setAppliedAction(actionFilter === 'all' ? '' : actionFilter)
     setAppliedFrom(fromDate)
     setAppliedTo(toDate)
   }
@@ -84,7 +84,7 @@ export default function AuditLogs() {
               <SelectValue placeholder="All" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">All</SelectItem>
+              <SelectItem value="all">All</SelectItem>
               {ACTION_TYPES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
             </SelectContent>
           </Select>

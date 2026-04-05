@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api, WebhookConfig } from '@/lib/api'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
@@ -152,26 +153,23 @@ export default function Webhooks() {
             <Label>Events</Label>
             <div className="flex flex-wrap gap-2">
               {ALL_EVENTS.map(ev => (
-                <label key={ev} className="flex items-center gap-1.5 cursor-pointer">
-                  <input
-                    type="checkbox"
+                <div key={ev} className="flex items-center gap-1.5">
+                  <Checkbox
+                    id={`event-${ev}`}
                     checked={formEvents.includes(ev)}
-                    onChange={() => toggleEvent(ev)}
-                    className="accent-violet-500"
+                    onCheckedChange={(checked) => { if (checked !== 'indeterminate') toggleEvent(ev) }}
                   />
-                  <span className="text-xs text-muted-foreground">{ev}</span>
-                </label>
+                  <label htmlFor={`event-${ev}`} className="text-xs text-muted-foreground cursor-pointer">{ev}</label>
+                </div>
               ))}
             </div>
           </div>
 
           <div className="flex items-center gap-2">
-            <input
-              type="checkbox"
+            <Checkbox
               id="formActive"
               checked={formActive}
-              onChange={e => setFormActive(e.target.checked)}
-              className="accent-violet-500"
+              onCheckedChange={(checked) => setFormActive(checked === true)}
             />
             <Label htmlFor="formActive" className="cursor-pointer">Active</Label>
           </div>
