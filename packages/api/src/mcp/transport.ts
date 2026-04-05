@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import { randomUUID } from 'node:crypto'
 import { WebStandardStreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js'
@@ -25,12 +25,13 @@ async function validateMcpToken(
         .set({ lastUsedAt: new Date() })
         .where(eq(mcpTokens.id, candidate.id))
         .catch(() => {})
-      // Fetch the user's current role for permission scoping
+      // Fetch the user's current role; also verify account is still active
       const user = await db.query.users.findFirst({
-        where: eq(users.id, candidate.userId),
+        where: and(eq(users.id, candidate.userId), eq(users.isActive, true)),
         columns: { role: true },
       })
-      return { userId: candidate.userId, userRole: user?.role ?? 'guest' }
+      if (!user) return null  // account disabled — deny access
+      return { userId: candidate.userId, userRole: user.role }
     }
   }
   return null
@@ -51,7 +52,10 @@ mcpRouter.all('/mcp', async (c) => {
   let transport: WebStandardStreamableHTTPServerTransport
 
   if (sessionId && sessions.has(sessionId)) {
-    // Resume existing session
+    // Resume existing session — token is NOT re-validated on each request.
+    // Known trade-off: if a token is revoked or a user is disabled mid-session,
+    // the change takes effect only when the session ends and a new one is created.
+    // MCP sessions are short-lived in practice, so this is acceptable.
     transport = sessions.get(sessionId)!
   } else if (!sessionId) {
     // New session: create transport + server with user's permission context

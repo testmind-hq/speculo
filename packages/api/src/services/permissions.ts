@@ -1,6 +1,6 @@
 import { and, eq, gt, inArray, isNull, or, sql } from 'drizzle-orm'
 import { db } from '../db/index.js'
-import { crossTeamGrants, services, teamMembers, teams } from '../db/schema.js'
+import { crossTeamGrants, services, teamMembers, teams, users } from '../db/schema.js'
 
 /**
  * Returns the set of service IDs accessible to the user.
@@ -54,10 +54,9 @@ export async function canAccessBranch(
   serviceName: string,
   branch: string,
 ): Promise<boolean> {
-  // Fetch user role to pass to canAccessService
-  const { users } = await import('../db/schema.js')
+  // Fetch user role; also verify account is active (disabled accounts lose access immediately)
   const user = await db.query.users.findFirst({
-    where: eq(users.id, userId),
+    where: and(eq(users.id, userId), eq(users.isActive, true)),
     columns: { role: true },
   })
   if (!user) return false
