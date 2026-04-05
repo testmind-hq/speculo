@@ -61,22 +61,24 @@ function sortBranches(branches: Branch[]): { branch: Branch; isDefault: boolean 
 
 export default function Catalog() {
   const [services, setServices] = useState<Service[]>([])
-  const [myTeamIds, setMyTeamIds] = useState<Set<string>>(new Set())
+  const [myTeamIds, setMyTeamIds] = useState<Set<string> | null>(null)
+  const [role, setRole] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [deleteTarget, setDeleteTarget] = useState<Service | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  const isAdmin = localStorage.getItem('speculo_role') === 'super_admin'
+  const isAdmin = role === 'super_admin'
 
   useEffect(() => {
     Promise.all([
       api.catalog(),
-      api.me().catch(() => ({ id: '', email: '', role: '', teams: [] as MyTeam[] })),
+      api.me().catch(() => ({ id: '', email: '', role: '', teams: null as MyTeam[] | null })),
     ]).then(([catalog, me]) => {
       setServices(catalog.services)
-      setMyTeamIds(new Set((me.teams ?? []).map((t: MyTeam) => t.id)))
+      setRole(me.role ?? '')
+      setMyTeamIds(me.teams ? new Set(me.teams.map((t: MyTeam) => t.id)) : null)
     }).catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
@@ -139,7 +141,8 @@ export default function Catalog() {
         const color = SERVICE_PALETTE_HEX[serviceColorIndex(svc.name)]
         const sorted = sortBranches(svc.branches)
         // Cross-team: service has a team but it's not one of the current user's teams
-        const isCrossTeam = !!svc.teamId && !myTeamIds.has(svc.teamId)
+        // When myTeamIds is null (me call failed), team membership is unknown — suppress the badge
+        const isCrossTeam = myTeamIds !== null && !!svc.teamId && !myTeamIds.has(svc.teamId)
 
         return (
           <div key={svc.id} className="rounded-xl border border-border bg-card">
