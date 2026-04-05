@@ -29,8 +29,8 @@ export default function TeamMembers() {
     try {
       const mRes = await api.admin.members.list(id)
       setMembers(mRes.members)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }
@@ -46,8 +46,8 @@ export default function TeamMembers() {
       await api.admin.members.add(id, userId.trim(), selectedRole)
       setUserId('')
       await load()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setAdding(false)
     }
@@ -58,8 +58,8 @@ export default function TeamMembers() {
     try {
       await api.admin.members.updateRole(id, memberId, role)
       setMembers(ms => ms.map(m => m.userId === memberId ? { ...m, role } : m))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -69,8 +69,8 @@ export default function TeamMembers() {
     try {
       await api.admin.members.remove(id, removeTarget.userId)
       setMembers(ms => ms.filter(m => m.userId !== removeTarget.userId))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setRemoving(false)
       setRemoveTarget(null)

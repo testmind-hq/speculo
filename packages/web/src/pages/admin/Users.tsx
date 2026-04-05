@@ -26,8 +26,8 @@ export default function AdminUsers() {
     try {
       const data = await api.admin.users.list()
       setUsers(data.users)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }
@@ -40,8 +40,8 @@ export default function AdminUsers() {
     try {
       await api.admin.users.update(id, { role })
       setUsers(us => us.map(u => u.id === id ? { ...u, role } : u))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -49,8 +49,8 @@ export default function AdminUsers() {
     try {
       await api.admin.users.update(id, { isActive: !current })
       setUsers(us => us.map(u => u.id === id ? { ...u, isActive: !current } : u))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -60,8 +60,8 @@ export default function AdminUsers() {
     try {
       await api.admin.users.delete(deleteTarget.id)
       setUsers(us => us.filter(u => u.id !== deleteTarget.id))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setDeleting(false)
       setDeleteTarget(null)

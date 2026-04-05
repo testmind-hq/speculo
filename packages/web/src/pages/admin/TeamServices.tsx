@@ -32,8 +32,8 @@ export default function TeamServices() {
       ])
       setTeamServices(tsRes.services)
       setAllServices(allRes.services)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }
@@ -46,8 +46,8 @@ export default function TeamServices() {
     try {
       await api.admin.services.assign(serviceId, id)
       await load()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     }
   }
 
@@ -57,8 +57,8 @@ export default function TeamServices() {
     try {
       await api.admin.services.assign(removeTarget.id, null)
       setTeamServices(s => s.filter(x => x.id !== removeTarget.id))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setRemoving(false)
       setRemoveTarget(null)

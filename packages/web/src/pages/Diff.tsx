@@ -116,27 +116,19 @@ export default function Diff() {
       <h1 className="text-2xl font-semibold">Spec Diff</h1>
 
       {/* Mode tabs */}
-      <div className="flex rounded-lg border border-border overflow-hidden w-fit">
-        <button
+      <div className="flex gap-1">
+        <Button
+          variant={mode === 'branch' ? 'secondary' : 'ghost'}
           onClick={() => { setMode('branch'); resetResult() }}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            mode === 'branch'
-              ? 'bg-violet-700 text-white'
-              : 'bg-card text-muted-foreground hover:text-foreground'
-          }`}
         >
           Compare branches
-        </button>
-        <button
+        </Button>
+        <Button
+          variant={mode === 'history' ? 'secondary' : 'ghost'}
           onClick={() => { setMode('history'); resetResult() }}
-          className={`px-4 py-2 text-sm font-medium transition-colors ${
-            mode === 'history'
-              ? 'bg-violet-700 text-white'
-              : 'bg-card text-muted-foreground hover:text-foreground'
-          }`}
         >
           Version history
-        </button>
+        </Button>
       </div>
 
       {/* Inputs */}

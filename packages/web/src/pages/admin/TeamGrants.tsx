@@ -49,8 +49,8 @@ export default function TeamGrants() {
       } catch {
         // not super_admin — teams list unavailable
       }
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }
@@ -77,8 +77,8 @@ export default function TeamGrants() {
       setBranchInput('')
       setExpiresAt('')
       await load()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setSubmitting(false)
     }
@@ -90,8 +90,8 @@ export default function TeamGrants() {
     try {
       await api.admin.grants.delete(revokeTarget.id)
       await load()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setRevoking(false)
       setRevokeTarget(null)

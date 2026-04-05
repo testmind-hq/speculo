@@ -24,8 +24,8 @@ export default function AdminTeams() {
     try {
       const data = await api.admin.teams.list()
       setTeams(data.teams)
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setLoading(false)
     }
@@ -41,8 +41,8 @@ export default function AdminTeams() {
       await api.admin.teams.create({ name: newName.trim() })
       setNewName('')
       await load()
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setCreating(false)
     }
@@ -54,8 +54,8 @@ export default function AdminTeams() {
     try {
       await api.admin.teams.delete(deleteTarget.id)
       setTeams(t => t.filter(x => x.id !== deleteTarget.id))
-    } catch (e: any) {
-      setError(e.message)
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : String(e))
     } finally {
       setDeleting(false)
       setDeleteTarget(null)
