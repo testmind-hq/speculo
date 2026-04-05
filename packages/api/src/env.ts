@@ -8,7 +8,9 @@ const envSchema = z.object({
   // Set to "true" only when serving over HTTPS (e.g. behind an nginx TLS terminator)
   SECURE_COOKIES: z.enum(['true', 'false']).default('false').transform(v => v === 'true'),
   // Optional: set a fixed admin password for testing/CI. If unset, a random password is generated on first run.
-  ADMIN_PASSWORD: z.string().min(8).optional(),
+  // Not recommended for production — use a strong random password there.
+  // Empty string is treated as unset (safe for docker-compose passthrough of unset host vars).
+  ADMIN_PASSWORD: z.preprocess(v => (v === '' ? undefined : v), z.string().min(8).optional()),
 })
 
 export const env = envSchema.parse(process.env)

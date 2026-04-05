@@ -59,10 +59,10 @@ async function bootstrapAdminUser() {
   console.log('========================================')
   console.log('Default admin account created:')
   console.log('  Email:    admin@example.com')
-  console.log(`  Password: ${password}`)
   if (env.ADMIN_PASSWORD) {
-    console.log('  (password set via ADMIN_PASSWORD env var)')
+    console.log('  Password: (set via ADMIN_PASSWORD env var)')
   } else {
+    console.log(`  Password: ${password}`)
     console.log('Change this password after first login.')
   }
   console.log('========================================')

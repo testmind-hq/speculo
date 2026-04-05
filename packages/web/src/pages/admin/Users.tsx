@@ -29,6 +29,7 @@ export default function AdminUsers() {
   const [newEmail, setNewEmail] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [creating, setCreating] = useState(false)
+  const [createError, setCreateError] = useState('')
 
   async function load() {
     try {
@@ -65,6 +66,7 @@ export default function AdminUsers() {
   async function createUser(e: React.FormEvent) {
     e.preventDefault()
     setCreating(true)
+    setCreateError('')
     try {
       await api.register(newEmail.trim(), newPassword)
       setNewEmail('')
@@ -72,7 +74,7 @@ export default function AdminUsers() {
       setShowCreate(false)
       await load()
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : String(e))
+      setCreateError(e instanceof Error ? e.message : String(e))
     } finally {
       setCreating(false)
     }
@@ -155,7 +157,7 @@ export default function AdminUsers() {
         </TableBody>
       </Table>
 
-      <Dialog open={showCreate} onOpenChange={open => { if (!open) { setShowCreate(false); setNewEmail(''); setNewPassword('') } }}>
+      <Dialog open={showCreate} onOpenChange={open => { if (!open) { setShowCreate(false); setNewEmail(''); setNewPassword(''); setCreateError('') } }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('admin.users.createTitle')}</DialogTitle>
@@ -169,6 +171,7 @@ export default function AdminUsers() {
               <Label>{t('admin.users.createPasswordLabel')}</Label>
               <Input type="password" required minLength={8} value={newPassword} onChange={e => setNewPassword(e.target.value)} />
             </div>
+            {createError && <p className="text-destructive text-sm">{createError}</p>}
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setShowCreate(false)} disabled={creating}>{t('admin.users.cancel')}</Button>
               <Button type="submit" disabled={creating}>{creating ? t('admin.users.creating') : t('admin.users.create')}</Button>
