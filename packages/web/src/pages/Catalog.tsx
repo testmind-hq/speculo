@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTranslation } from 'react-i18next'
+import i18n from '@/lib/i18n'
 import { api } from '@/lib/api'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -28,12 +30,12 @@ type MyTeam = { id: string; name: string; displayName: string | null; role: stri
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime()
   const minutes = Math.floor(diff / 60000)
-  if (minutes < 60) return `${minutes}m 前`
+  if (minutes < 60) return i18n.t('catalog.minutesAgo', { count: minutes })
   const hours = Math.floor(minutes / 60)
-  if (hours < 24) return `${hours}h 前`
+  if (hours < 24) return i18n.t('catalog.hoursAgo', { count: hours })
   const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}d 前`
-  return `${Math.floor(days / 7)}w 前`
+  if (days < 7) return i18n.t('catalog.daysAgo', { count: days })
+  return i18n.t('catalog.weeksAgo', { count: Math.floor(days / 7) })
 }
 
 function sortBranches(branches: Branch[]): { branch: Branch; isDefault: boolean }[] {
@@ -60,6 +62,7 @@ function sortBranches(branches: Branch[]): { branch: Branch; isDefault: boolean 
 }
 
 export default function Catalog() {
+  const { t } = useTranslation()
   const [services, setServices] = useState<Service[]>([])
   const [myTeamIds, setMyTeamIds] = useState<Set<string> | null>(null)
   const [role, setRole] = useState<string>('')
@@ -78,7 +81,7 @@ export default function Catalog() {
     ]).then(([catalog, me]) => {
       setServices(catalog.services)
       setRole(me.role ?? '')
-      setMyTeamIds(me.teams ? new Set(me.teams.map((t: MyTeam) => t.id)) : null)
+      setMyTeamIds(me.teams ? new Set(me.teams.map((m: MyTeam) => m.id)) : null)
     }).catch(err => setError(err.message))
       .finally(() => setLoading(false))
   }, [])
@@ -98,16 +101,16 @@ export default function Catalog() {
     try {
       await api.deleteService(deleteTarget.id)
       setServices(prev => prev.filter(s => s.id !== deleteTarget.id))
-      toast.success(`已删除 "${deleteTarget.displayName ?? deleteTarget.name}"`)
+      toast.success(t('catalog.deletedSuccess', { name: deleteTarget.displayName ?? deleteTarget.name }))
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'Delete failed')
+      toast.error(err instanceof Error ? err.message : t('catalog.deleteFailed'))
     } finally {
       setDeleting(false)
       setDeleteTarget(null)
     }
   }
 
-  if (loading) return <p className="text-muted-foreground">Loading…</p>
+  if (loading) return <p className="text-muted-foreground">{t('common.loading')}</p>
   if (error) return <p className="text-destructive">{error}</p>
 
   const totalBranches = services.reduce((s, svc) => s + svc.branches.length, 0)
@@ -118,20 +121,20 @@ export default function Catalog() {
       {/* Stats bar */}
       <div className="flex items-center gap-3">
         <div className="rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
-          {services.length} 服务
+          {t('catalog.services', { count: services.length })}
         </div>
         <div className="rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
-          {totalBranches} 分支
+          {t('catalog.branches', { count: totalBranches })}
         </div>
         <div className="rounded-full border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
-          {totalEndpoints} 端点
+          {t('catalog.endpoints', { count: totalEndpoints })}
         </div>
       </div>
 
       {!services.length && (
         <div className="text-center py-16 text-muted-foreground">
-          <p className="text-lg">No services yet.</p>
-          <p className="text-sm mt-2">Import your first OpenAPI spec to get started.</p>
+          <p className="text-lg">{t('catalog.noServices')}</p>
+          <p className="text-sm mt-2">{t('catalog.noServicesHint')}</p>
         </div>
       )}
 
@@ -140,8 +143,6 @@ export default function Catalog() {
         const isOpen = expanded.has(svc.id)
         const color = SERVICE_PALETTE_HEX[serviceColorIndex(svc.name)]
         const sorted = sortBranches(svc.branches)
-        // Cross-team: service has a team but it's not one of the current user's teams
-        // When myTeamIds is null (me call failed), team membership is unknown — suppress the badge
         const isCrossTeam = myTeamIds !== null && !!svc.teamId && !myTeamIds.has(svc.teamId)
 
         return (
@@ -167,17 +168,17 @@ export default function Catalog() {
               )}
               {isCrossTeam && (
                 <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 text-violet-400 border-violet-800 shrink-0">
-                  授权访问
+                  {t('catalog.authorizedAccess')}
                 </Badge>
               )}
               <span className="text-xs text-muted-foreground shrink-0">
-                [{svc.branches.length} 分支]
+                {t('catalog.branchCount', { count: svc.branches.length })}
               </span>
               {isAdmin && (
                 <button
                   onClick={e => { e.stopPropagation(); setDeleteTarget(svc) }}
                   className="ml-1 rounded p-1 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors shrink-0"
-                  aria-label="Delete service"
+                  aria-label={t('catalog.deleteServiceLabel')}
                 >
                   <Trash2 size={13} />
                 </button>
@@ -198,7 +199,7 @@ export default function Catalog() {
                       <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">default</Badge>
                     )}
                     <span className="flex-1" />
-                    <span className="text-xs text-muted-foreground">{b.endpointCount} ep</span>
+                    <span className="text-xs text-muted-foreground">{t('catalog.endpointCount', { count: b.endpointCount })}</span>
                     <span className="text-xs text-muted-foreground">{relativeTime(b.uploadedAt)}</span>
                     <a
                       href={`/docs/${svc.name}/${b.branch}`}
@@ -206,7 +207,7 @@ export default function Catalog() {
                       rel="noopener noreferrer"
                       className="text-xs text-violet-400 opacity-0 group-hover:opacity-100 transition-opacity hover:text-violet-300 shrink-0"
                     >
-                      查看 →
+                      {t('catalog.view')}
                     </a>
                   </div>
                 ))}
@@ -220,17 +221,17 @@ export default function Catalog() {
       <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>删除服务</DialogTitle>
+            <DialogTitle>{t('catalog.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              确定要删除 "{deleteTarget?.displayName ?? deleteTarget?.name}" 及其所有 Spec 版本？此操作无法撤销。
+              {t('catalog.deleteConfirm', { name: deleteTarget?.displayName ?? deleteTarget?.name ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
-              {deleting ? '删除中…' : '删除'}
+              {deleting ? t('catalog.deleting') : t('catalog.deleteAction')}
             </Button>
           </DialogFooter>
         </DialogContent>
