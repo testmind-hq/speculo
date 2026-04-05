@@ -157,9 +157,9 @@ export default function Webhooks() {
                   <Checkbox
                     id={`event-${ev}`}
                     checked={formEvents.includes(ev)}
-                    onCheckedChange={(checked) => { if (checked !== 'indeterminate') toggleEvent(ev) }}
+                    onCheckedChange={() => toggleEvent(ev)}
                   />
-                  <label htmlFor={`event-${ev}`} className="text-xs text-muted-foreground cursor-pointer">{ev}</label>
+                  <Label htmlFor={`event-${ev}`} className="text-xs text-muted-foreground cursor-pointer">{ev}</Label>
                 </div>
               ))}
             </div>

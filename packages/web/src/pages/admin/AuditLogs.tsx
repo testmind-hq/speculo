@@ -29,7 +29,7 @@ export default function AuditLogs() {
   const [actionFilter, setActionFilter] = useState('all')
   const [fromDate, setFromDate] = useState('')
   const [toDate, setToDate] = useState('')
-  const [appliedAction, setAppliedAction] = useState('')
+  const [appliedAction, setAppliedAction] = useState('all')
   const [appliedFrom, setAppliedFrom] = useState('')
   const [appliedTo, setAppliedTo] = useState('')
 
