@@ -19,9 +19,9 @@ function PrivateLayout({ children }: { children: React.ReactNode }) {
   const token = localStorage.getItem('speculo_token')
   if (!token) return <Navigate to="/login" replace />
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-8">{children}</main>
+      <main className="flex-1 overflow-y-auto p-8">{children}</main>
     </div>
   )
 }
@@ -52,9 +52,9 @@ function AdminLayout({ children, requiredRole }: { children: React.ReactNode; re
   if (!allowed) return <Navigate to="/" replace />
 
   return (
-    <div className="flex min-h-screen bg-background">
+    <div className="flex h-screen overflow-hidden bg-background">
       <Sidebar />
-      <main className="flex-1 overflow-auto p-8">{children}</main>
+      <main className="flex-1 overflow-y-auto p-8">{children}</main>
     </div>
   )
 }

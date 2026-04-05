@@ -98,7 +98,7 @@ export default function Sidebar() {
       <Separator />
 
       {/* Nav items */}
-      <nav className="flex-1 overflow-hidden px-2 py-3 space-y-0.5">
+      <nav className="flex-1 overflow-y-auto px-2 py-3 space-y-0.5">
         {NAV_MAIN.map(item => <NavLink key={item.to} item={item} activePath={location.pathname} />)}
 
         {hasAdminSection && (
