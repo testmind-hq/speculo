@@ -18,7 +18,7 @@ Self-hosted internal API documentation platform. Teams push OpenAPI specs to Spe
 ### Docker (recommended)
 
 ```bash
-git clone https://github.com/yuchou87/speculo.git
+git clone https://github.com/testmind-hq/speculo.git
 cd speculo
 
 # Generate a secure JWT secret
