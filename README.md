@@ -230,4 +230,4 @@ E2E tests cover login, spec upload, catalog browsing, MCP token management, and 
 
 ## License
 
-MIT
+Apache 2.0
