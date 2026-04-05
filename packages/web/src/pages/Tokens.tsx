@@ -81,6 +81,7 @@ export default function Tokens() {
           required
           placeholder={t('tokens.namePlaceholder')}
           className="flex-1"
+          data-testid="token-name-input"
         />
         <Select value={scope} onValueChange={v => setScope(v as 'read' | 'write')}>
           <SelectTrigger className="w-[100px]">
@@ -97,7 +98,7 @@ export default function Tokens() {
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       {newToken && (
-        <Alert className="border-amber-700 bg-amber-950/50">
+        <Alert data-testid="token-created-alert" className="border-amber-700 bg-amber-950/50">
           <AlertDescription className="space-y-3">
             <p className="font-medium text-amber-400">{t('tokens.createdAlert')}</p>
             <code className="block break-all rounded bg-background p-2 text-xs text-green-400">{newToken}</code>
