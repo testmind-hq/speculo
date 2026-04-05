@@ -24,6 +24,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change_me_in_production}
       JWT_EXPIRY_DAYS: ${JWT_EXPIRY_DAYS:-7}
       PORT: 3000
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
     depends_on:
       db:
         condition: service_healthy

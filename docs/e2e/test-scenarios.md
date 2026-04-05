@@ -1,8 +1,14 @@
 # Speculo E2E Test Scenarios
 
-**Target:** http://10.0.0.5:3000/
-**Test Account:** admin@example.com / Qy4sYFNyfuIwBqJYqRUKOQ
+**Target:** `$BASE_URL` (default: `http://localhost:3000`)
+**Test Account:** `admin@example.com` / `$ADMIN_PASSWORD`
 **Date:** 2026-04-05
+
+> Set environment variables before running:
+> ```bash
+> export BASE_URL=http://localhost:3000
+> export ADMIN_PASSWORD=your_admin_password
+> ```
 
 ---
 
@@ -10,7 +16,7 @@
 
 ### S1.1 Login with valid credentials
 1. Navigate to `/login`
-2. Enter email `admin@example.com`, password `Qy4sYFNyfuIwBqJYqRUKOQ`
+2. Enter email `admin@example.com`, password `$ADMIN_PASSWORD`
 3. Click Sign In
 - **Expected:** Redirect to `/` (Catalog page); sidebar visible; user email shown in footer
 
@@ -190,7 +196,7 @@
 ## S8B — Regular User Operations
 
 > **Setup:** Create a regular user via API first (S8.2), then perform the following as that user.
-> Test account: `testuser@example.com` / `Test@12345` (role: `guest`)
+> Test account: `testuser@example.com` / `$E2E_USER_PASSWORD` (role: `guest`, default: `Test@12345`)
 
 ### S8B.1 Regular user login
 1. Logout from admin

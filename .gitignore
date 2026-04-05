@@ -3,6 +3,7 @@ docs/superpowers/
 node_modules/
 dist/
 .env
+.env.e2e
 *.local
 playwright-report/
 test-results/
