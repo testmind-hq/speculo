@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { api, type TeamMember } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,6 +16,7 @@ import {
 
 export default function TeamMembers() {
   const { id } = useParams<{ id: string }>()
+  const { t } = useTranslation()
   const [members, setMembers] = useState<TeamMember[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -77,13 +79,13 @@ export default function TeamMembers() {
     }
   }
 
-  if (loading) return <p className="text-muted-foreground">Loading…</p>
+  if (loading) return <p className="text-muted-foreground">{t('common.loading')}</p>
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Link to="/admin/teams" className="text-muted-foreground hover:text-foreground text-sm">← Teams</Link>
-        <h1 className="text-2xl font-semibold">Team Members</h1>
+        <Link to="/admin/teams" className="text-muted-foreground hover:text-foreground text-sm">{t('admin.teamMembers.backToTeams')}</Link>
+        <h1 className="text-2xl font-semibold">{t('admin.teamMembers.title')}</h1>
       </div>
 
       {error && <p className="text-destructive text-sm">{error}</p>}
@@ -91,7 +93,7 @@ export default function TeamMembers() {
       <form onSubmit={addMember} className="flex gap-2 items-center">
         <Input
           type="text"
-          placeholder="User ID"
+          placeholder={t('admin.teamMembers.userIdPlaceholder')}
           value={userId}
           onChange={e => setUserId(e.target.value)}
           className="w-72"
@@ -105,16 +107,18 @@ export default function TeamMembers() {
             <SelectItem value="owner">Owner</SelectItem>
           </SelectContent>
         </Select>
-        <Button type="submit" disabled={adding || !userId.trim()}>+ Add</Button>
+        <Button type="submit" disabled={adding || !userId.trim()}>
+          {adding ? t('admin.teamMembers.adding') : t('admin.teamMembers.addButton')}
+        </Button>
       </form>
 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
+            <TableHead>{t('admin.teamMembers.emailHead')}</TableHead>
+            <TableHead>{t('admin.teamMembers.roleHead')}</TableHead>
             <TableHead>Joined</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>{t('admin.teamMembers.actionsHead')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -136,7 +140,7 @@ export default function TeamMembers() {
                 {new Date(m.joinedAt).toLocaleDateString()}
               </TableCell>
               <TableCell>
-                <Button variant="ghost" size="sm" onClick={() => setRemoveTarget(m)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">Remove</Button>
+                <Button variant="ghost" size="sm" onClick={() => setRemoveTarget(m)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">{t('admin.teamMembers.removeButton')}</Button>
               </TableCell>
             </TableRow>
           ))}
@@ -151,15 +155,15 @@ export default function TeamMembers() {
       <Dialog open={!!removeTarget} onOpenChange={open => { if (!open) setRemoveTarget(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Remove Member</DialogTitle>
+            <DialogTitle>{t('admin.teamMembers.removeTitle')}</DialogTitle>
             <DialogDescription>
-              Remove "{removeTarget?.email}" from this team?
+              {t('admin.teamMembers.removeConfirm', { email: removeTarget?.email ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRemoveTarget(null)} disabled={removing}>Cancel</Button>
+            <Button variant="outline" onClick={() => setRemoveTarget(null)} disabled={removing}>{t('admin.teamMembers.cancel')}</Button>
             <Button variant="destructive" onClick={confirmRemove} disabled={removing}>
-              {removing ? 'Removing…' : 'Remove'}
+              {removing ? t('admin.teamMembers.removing') : t('admin.teamMembers.remove')}
             </Button>
           </DialogFooter>
         </DialogContent>

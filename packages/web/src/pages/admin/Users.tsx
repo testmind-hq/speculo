@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api, type User } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +16,7 @@ import {
 const ROLES = ['super_admin', 'team_owner', 'team_member', 'guest'] as const
 
 export default function AdminUsers() {
+  const { t } = useTranslation()
   const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -68,22 +70,22 @@ export default function AdminUsers() {
     }
   }
 
-  if (loading) return <p className="text-muted-foreground">Loading…</p>
+  if (loading) return <p className="text-muted-foreground">{t('common.loading')}</p>
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Users</h1>
+      <h1 className="text-2xl font-semibold">{t('admin.users.title')}</h1>
 
       {error && <p className="text-destructive text-sm">{error}</p>}
 
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Teams</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Actions</TableHead>
+            <TableHead>{t('admin.users.emailHead')}</TableHead>
+            <TableHead>{t('admin.users.roleHead')}</TableHead>
+            <TableHead>{t('admin.users.teamsHead')}</TableHead>
+            <TableHead>{t('admin.users.statusHead')}</TableHead>
+            <TableHead>{t('admin.users.actionsHead')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -102,24 +104,24 @@ export default function AdminUsers() {
               </TableCell>
               <TableCell>
                 {u.teams.length > 0
-                  ? u.teams.map(t => (
-                    <Badge key={t.id} variant="secondary" className="mr-1 text-xs">{t.name} ({t.role})</Badge>
+                  ? u.teams.map(tm => (
+                    <Badge key={tm.id} variant="secondary" className="mr-1 text-xs">{tm.name} ({tm.role})</Badge>
                   ))
                   : <span className="text-muted-foreground">—</span>
                 }
               </TableCell>
               <TableCell>
                 {u.isActive
-                  ? <Badge variant="secondary" className="text-green-400 border-green-800">Active</Badge>
-                  : <Badge variant="outline" className="text-muted-foreground">Disabled</Badge>}
+                  ? <Badge variant="secondary" className="text-green-400 border-green-800">{t('admin.users.active')}</Badge>
+                  : <Badge variant="outline" className="text-muted-foreground">{t('admin.users.inactive')}</Badge>}
               </TableCell>
               <TableCell>
                 <div className="flex gap-3 text-xs">
                   <Button variant="ghost" size="sm" onClick={() => toggleActive(u.id, u.isActive)} className="h-auto p-0 text-xs text-amber-500 hover:text-amber-400 hover:bg-transparent">
-                    {u.isActive ? 'Disable' : 'Enable'}
+                    {u.isActive ? t('admin.users.deactivate') : t('admin.users.activate')}
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(u)} className="h-auto p-0 text-xs text-destructive hover:text-destructive/80 hover:bg-transparent">
-                    Delete
+                    {t('admin.users.deleteButton')}
                   </Button>
                 </div>
               </TableCell>
@@ -131,15 +133,15 @@ export default function AdminUsers() {
       <Dialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null) }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete User</DialogTitle>
+            <DialogTitle>{t('admin.users.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Delete user "{deleteTarget?.email}"? This cannot be undone.
+              {t('admin.users.deleteConfirm', { email: deleteTarget?.email ?? '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>Cancel</Button>
+            <Button variant="outline" onClick={() => setDeleteTarget(null)} disabled={deleting}>{t('admin.users.cancel')}</Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={deleting}>
-              {deleting ? 'Deleting…' : 'Delete'}
+              {deleting ? t('admin.users.deleting') : t('admin.users.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>
