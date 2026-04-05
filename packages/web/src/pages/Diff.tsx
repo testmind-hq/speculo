@@ -144,8 +144,9 @@ export default function Diff() {
         <CardContent className="pt-5 space-y-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label>Service name</Label>
+              <Label htmlFor="diff-service">Service name</Label>
               <Input
+                id="diff-service"
                 value={service}
                 onChange={e => { setService(e.target.value); resetResult() }}
                 placeholder="e.g. user-service"
@@ -155,16 +156,18 @@ export default function Diff() {
             {mode === 'branch' ? (
               <>
                 <div className="space-y-1.5">
-                  <Label>From branch</Label>
+                  <Label htmlFor="diff-from">From branch</Label>
                   <Input
+                    id="diff-from"
                     value={fromBranch}
                     onChange={e => { setFromBranch(e.target.value); resetResult() }}
                     placeholder="main"
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>To branch</Label>
+                  <Label htmlFor="diff-to">To branch</Label>
                   <Input
+                    id="diff-to"
                     value={toBranch}
                     onChange={e => { setToBranch(e.target.value); resetResult() }}
                     placeholder="e.g. feature/my-feature"
@@ -173,9 +176,10 @@ export default function Diff() {
               </>
             ) : (
               <div className="space-y-1.5">
-                <Label>Branch</Label>
+                <Label htmlFor="diff-branch">Branch</Label>
                 <div className="flex gap-2">
                   <Input
+                    id="diff-branch"
                     value={toBranch}
                     onChange={e => { setToBranch(e.target.value); resetResult(); setVersions([]) }}
                     placeholder="e.g. main"
@@ -298,7 +302,9 @@ export default function Diff() {
                         <li key={i} className="flex items-center gap-2 text-sm">
                           <span className="rounded px-1.5 py-0.5 bg-yellow-800/50 text-yellow-300 font-mono text-xs uppercase">{after.method}</span>
                           <span className="text-yellow-200 font-mono">{after.path}</span>
-                          {after.summary && <span className="text-yellow-600 truncate">{before.summary} → {after.summary}</span>}
+                          {(before.summary || after.summary) && (
+                            <span className="text-yellow-600 truncate">{before.summary ?? '(none)'} → {after.summary ?? '(none)'}</span>
+                          )}
                         </li>
                       ))}
                     </ul>
