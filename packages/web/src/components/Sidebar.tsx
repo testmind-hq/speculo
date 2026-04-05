@@ -24,16 +24,7 @@ import { Separator } from '@/components/ui/separator'
 import { useTheme } from '@/components/ThemeProvider'
 import { api } from '@/lib/api'
 
-const SERVICE_PALETTE = ['violet-400', 'emerald-400', 'amber-400', 'sky-400', 'rose-400', 'teal-400']
-// exported so Catalog can use same palette
-export const SERVICE_PALETTE_HEX = ['#a78bfa', '#34d399', '#fbbf24', '#38bdf8', '#fb7185', '#2dd4bf']
-export function serviceColorIndex(name: string): number {
-  let hash = 0
-  for (const ch of name) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0
-  return hash % 6
-}
-// Keep SERVICE_PALETTE in scope to avoid unused-import lint
-void SERVICE_PALETTE
+export { SERVICE_PALETTE_HEX, serviceColorIndex } from '@/lib/serviceColors'
 
 type NavItem = {
   icon: React.ReactNode
@@ -57,6 +48,23 @@ const NAV_ADMIN_SUPER: NavItem[] = [
   { icon: <Webhook size={14} />, label: 'Webhooks', to: '/admin/webhooks' },
 ]
 
+function NavLink({ item, activePath }: { item: NavItem; activePath: string }) {
+  const active = item.match ? item.match(activePath) : activePath === item.to
+  return (
+    <Link
+      to={item.to}
+      className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
+        active
+          ? 'bg-violet-950/60 text-violet-300 font-medium'
+          : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-300'
+      }`}
+    >
+      {item.icon}
+      <span>{item.label}</span>
+    </Link>
+  )
+}
+
 export default function Sidebar() {
   const location = useLocation()
   const navigate = useNavigate()
@@ -78,28 +86,6 @@ export default function Sidebar() {
     navigate('/login')
   }
 
-  function isActive(item: NavItem) {
-    if (item.match) return item.match(location.pathname)
-    return location.pathname === item.to
-  }
-
-  function NavLink({ item }: { item: NavItem }) {
-    const active = isActive(item)
-    return (
-      <Link
-        to={item.to}
-        className={`flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors ${
-          active
-            ? 'bg-violet-950/60 text-violet-300 font-medium'
-            : 'text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-300'
-        }`}
-      >
-        {item.icon}
-        <span>{item.label}</span>
-      </Link>
-    )
-  }
-
   return (
     <aside className="flex h-screen w-[210px] shrink-0 flex-col border-r border-border bg-sidebar">
       {/* Logo */}
@@ -114,7 +100,7 @@ export default function Sidebar() {
 
       {/* Nav items */}
       <nav className="flex-1 overflow-hidden px-2 py-3 space-y-0.5">
-        {NAV_MAIN.map(item => <NavLink key={item.to} item={item} />)}
+        {NAV_MAIN.map(item => <NavLink key={item.to} item={item} activePath={location.pathname} />)}
 
         {hasAdminSection && (
           <>
@@ -124,10 +110,10 @@ export default function Sidebar() {
               </p>
             </div>
             {(isSuperAdmin || isTeamOwner) && NAV_ADMIN_OWNER.map(item => (
-              <NavLink key={item.to} item={item} />
+              <NavLink key={item.to} item={item} activePath={location.pathname} />
             ))}
             {isSuperAdmin && NAV_ADMIN_SUPER.map(item => (
-              <NavLink key={item.to} item={item} />
+              <NavLink key={item.to} item={item} activePath={location.pathname} />
             ))}
           </>
         )}
