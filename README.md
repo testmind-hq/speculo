@@ -228,6 +228,19 @@ E2E tests cover login, spec upload, catalog browsing, MCP token management, and 
 - **Spec processing:** `@scalar/openapi-upgrader`, `@stoplight/spectral-core`, `@apidevtools/swagger-parser`
 - **MCP:** `@modelcontextprotocol/sdk`
 
+## Acknowledgements
+
+speculo composes the following open-source projects (consumed as standard npm dependencies; no source code embedded or modified):
+
+- [Stoplight Spectral](https://github.com/stoplightio/spectral) — OpenAPI linting (Apache-2.0)
+- [Scalar](https://github.com/scalar/scalar) — interactive docs UI (MIT)
+- [Hono](https://github.com/honojs/hono) — web framework (MIT)
+- [Drizzle ORM](https://github.com/drizzle-team/drizzle-orm) — database layer (Apache-2.0)
+- [Model Context Protocol SDK](https://github.com/modelcontextprotocol/typescript-sdk) — MCP server (MIT)
+- [Swagger Parser](https://github.com/APIDevTools/swagger-parser) — OpenAPI/Swagger parsing (MIT)
+
+See [NOTICE](NOTICE) for the full attribution.
+
 ## License
 
-Apache 2.0
+Apache 2.0 — see [LICENSE](LICENSE).

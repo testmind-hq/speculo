@@ -1,0 +1,45 @@
+speculo
+Copyright 2026 testmind-hq
+
+This product includes software developed at testmind-hq
+(https://github.com/testmind-hq).
+
+== Open-source dependencies ==
+
+speculo is built using the following open-source packages, consumed as
+standard npm dependencies (see packages/*/package.json for the full list).
+No source code from these projects is embedded or modified in speculo:
+
+- Stoplight Spectral (https://github.com/stoplightio/spectral) - Apache-2.0
+  OpenAPI linting engine; used for spec validation in
+  packages/api/src/services/specProcessor.ts.
+
+- Scalar (https://github.com/scalar/scalar) - MIT
+  API documentation rendering; used for the interactive docs UI at
+  /docs/:service/:branch.
+
+- Hono (https://github.com/honojs/hono) - MIT
+  Web framework powering the API server.
+
+- Drizzle ORM (https://github.com/drizzle-team/drizzle-orm) - Apache-2.0
+  Database access layer for PostgreSQL.
+
+- Model Context Protocol SDK (https://github.com/modelcontextprotocol/typescript-sdk) - MIT
+  MCP server implementation for AI assistant integration.
+
+- Swagger Parser (https://github.com/APIDevTools/swagger-parser) - MIT
+  OpenAPI / Swagger 2.0 parsing.
+
+- Radix UI (https://www.radix-ui.com) - MIT
+  Accessible UI primitives in the web frontend.
+
+- Tailwind CSS (https://tailwindcss.com) - MIT
+  Utility-first CSS framework.
+
+== Standards ==
+
+- OpenAPI Specification (https://www.openapis.org) - Apache 2.0
+  Used for the spec format speculo stores and serves.
+
+- Model Context Protocol (https://modelcontextprotocol.io) - MIT
+  Used for the AI assistant integration protocol.

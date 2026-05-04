@@ -228,6 +228,19 @@ E2E 测试覆盖登录、规范上传、目录浏览、MCP Token 管理和管理
 - **规范处理：** `@scalar/openapi-upgrader`、`@stoplight/spectral-core`、`@apidevtools/swagger-parser`
 - **MCP：** `@modelcontextprotocol/sdk`
 
+## 致谢
+
+speculo 组合了以下开源项目(作为 npm 依赖正常引入,未嵌入或修改任何源码):
+
+- [Stoplight Spectral](https://github.com/stoplightio/spectral) — OpenAPI lint 引擎 (Apache-2.0)
+- [Scalar](https://github.com/scalar/scalar) — 交互式文档 UI (MIT)
+- [Hono](https://github.com/honojs/hono) — Web 框架 (MIT)
+- [Drizzle ORM](https://github.com/drizzle-team/drizzle-orm) — 数据库访问层 (Apache-2.0)
+- [Model Context Protocol SDK](https://github.com/modelcontextprotocol/typescript-sdk) — MCP server (MIT)
+- [Swagger Parser](https://github.com/APIDevTools/swagger-parser) — OpenAPI/Swagger 解析 (MIT)
+
+完整署名详见 [NOTICE](NOTICE)。
+
 ## 开源许可
 
-Apache 2.0
+Apache 2.0 — 详见 [LICENSE](LICENSE)。
